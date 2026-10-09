@@ -8,10 +8,11 @@ makes releases painless, and makes findings useful over time instead of once.
 Progress is tracked in the [1.2.0 milestone](../../milestone/1).
 
 ### 1. Release pipeline
-- [ ] GitHub Actions on a `v*` tag: build, run the tests, run `tools\package.ps1`, attach Setup.exe, zip and checksum to the release.
-- [ ] winget manifest updated automatically for each release (`Rakin.CoreScope`).
+- [x] GitHub Actions on a `v*` tag: build, run the tests, run `tools\package.ps1`, attach Setup.exe, zip and checksum to the release (CI also runs on every push).
+- [ ] winget manifest updated automatically for each release (`Rakin.CoreScope`). The workflow step is written; it starts working once the 1.0.0 package is approved and a `WINGET_TOKEN` secret is added.
 - [ ] Code signing, so the installer shows a verified publisher (decision: SignPath Foundation, Azure Trusted Signing, or stay unsigned).
-- [ ] Issue templates, `SECURITY.md`, `CONTRIBUTING.md`, README screenshots.
+- [x] Issue templates, `SECURITY.md`, `CONTRIBUTING.md`.
+- [ ] README screenshots.
 
 ### 2. Insights that keep working after you close the page
 - [ ] Tray notification when a *new* warning or critical finding appears (once per finding; respects dismiss and snooze).

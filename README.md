@@ -9,10 +9,7 @@ but written for normal people: everything is explained in plain English.
 
 **[⬇ Download the latest version](../../releases/latest)**: get `CoreScope-x.y.z-Setup.exe` from the newest release and run it.
 
-Or install from a terminal:
-```
-winget install Rakin.CoreScope
-```
+A winget package (`winget install Rakin.CoreScope`) is waiting for review by the winget team and will work once it is approved.
 
 > **"Windows protected your PC"?** CoreScope isn't code-signed yet (signing certificates cost money or need a company).
 > Click **More info → Run anyway**. It's shown only once.

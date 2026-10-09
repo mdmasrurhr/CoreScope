@@ -1,0 +1,111 @@
+<UserControl x:Class="CoreScope.Views.InsightsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:CoreScope.Core.ViewModels"
+             xmlns:c="clr-namespace:CoreScope.Controls">
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Margin="{DynamicResource PagePadding}" MaxWidth="{StaticResource PageMaxWidth}" HorizontalAlignment="Stretch">
+            <TextBlock Text="INSIGHTS" Style="{StaticResource Overline}" />
+            <TextBlock Text="What CoreScope noticed about your PC" Style="{StaticResource Headline}" />
+            <TextBlock Text="{Binding Summary}" Style="{StaticResource SubHeadline}" />
+
+            <!-- Checkup: every check runs again (security, updates, maintenance, startup, hardware) -->
+            <DockPanel Margin="0,0,0,16">
+                <Button DockPanel.Dock="Right" Content="Run full checkup" Command="{Binding CheckupCommand}" Padding="16,8" MinWidth="96"
+                        Style="{StaticResource PrimaryButton}" IsEnabled="{Binding IsNotChecking}" AutomationProperties.Name="Run full checkup" />
+                <StackPanel VerticalAlignment="Center">
+                    <TextBlock Text="{Binding CheckupStatus}" Style="{StaticResource BodySecondary}" />
+                    <ProgressBar IsIndeterminate="True" Height="3" Margin="0,8,16,0" Visibility="{Binding IsChecking, Converter={StaticResource Vis}}" />
+                </StackPanel>
+            </DockPanel>
+            <Border Style="{StaticResource Inset}" Margin="0,0,0,16" Visibility="{Binding HasAnnouncement, Converter={StaticResource Vis}}">
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Left" Style="{StaticResource Glyph}" Text="&#xE946;" FontSize="{StaticResource IconSmall}" Margin="0,4,8,0" VerticalAlignment="Top"
+                               Foreground="{DynamicResource AccentText}" />
+                    <TextBlock Text="{Binding Announcement}" Style="{StaticResource BodyStrong}" />
+                </DockPanel>
+            </Border>
+
+            <!-- Area scores: click one to filter -->
+            <ItemsControl ItemsSource="{Binding Areas}" Margin="0,0,-12,12" KeyboardNavigation.TabNavigation="Continue">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <c:AdaptiveGrid MinItemWidth="136" />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="{x:Type vm:InsightArea}">
+                        <Button Command="{Binding SelectCommand}" Margin="0,0,12,12" Padding="0" HorizontalContentAlignment="Stretch"
+                                AutomationProperties.Name="{Binding Name}" ToolTip="Show only this area">
+                            <Border x:Name="Frame" Padding="16,12" BorderThickness="0,0,0,3" BorderBrush="Transparent">
+                                <StackPanel>
+                                    <DockPanel>
+                                        <TextBlock DockPanel.Dock="Left" Style="{StaticResource Glyph}" Text="{Binding Glyph}" Margin="0,0,8,0" />
+                                        <TextBlock Text="{Binding Name}" Style="{StaticResource Caption}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                                    </DockPanel>
+                                    <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                        <TextBlock x:Name="ScoreText" Text="{Binding ScoreText}" FontSize="{DynamicResource FontDisplay}" FontWeight="SemiBold"
+                                                   Foreground="{StaticResource SevGood}" Typography.NumeralAlignment="Tabular" />
+                                        <TextBlock Text="{Binding Caption}" Style="{StaticResource Caption}" VerticalAlignment="Bottom" Margin="8,0,0,4" />
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+                        </Button>
+                        <DataTemplate.Triggers>
+                            <DataTrigger Binding="{Binding Level}" Value="Warning">
+                                <Setter TargetName="ScoreText" Property="Foreground" Value="{StaticResource SevWarning}" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding Level}" Value="Critical">
+                                <Setter TargetName="ScoreText" Property="Foreground" Value="{StaticResource SevCritical}" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding Name}" Value="All">
+                                <Setter TargetName="ScoreText" Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                                <Setter TargetName="Frame" Property="BorderBrush" Value="{DynamicResource AccentFillColorDefaultBrush}" />
+                            </DataTrigger>
+                        </DataTemplate.Triggers>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <!-- Findings, each with a dismiss menu in the corner -->
+            <ItemsControl ItemsSource="{Binding Items}" KeyboardNavigation.TabNavigation="Continue">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Grid>
+                            <ContentPresenter Content="{Binding}" ContentTemplate="{StaticResource InsightTemplate}" />
+                            <Menu x:Name="DismissMenu" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,8,12,0" Background="Transparent">
+                                <MenuItem ToolTip="Dismiss" AutomationProperties.Name="Dismiss this finding" Padding="8,4">
+                                    <MenuItem.Header>
+                                        <TextBlock Style="{StaticResource Glyph}" Text="&#xE712;" />
+                                    </MenuItem.Header>
+                                    <MenuItem Header="Hide for 7 days" Command="{x:Static vm:InsightActions.SnoozeWeek}" CommandParameter="{Binding}" />
+                                    <MenuItem Header="Hide permanently" Command="{x:Static vm:InsightActions.DismissForever}" CommandParameter="{Binding}" />
+                                    <MenuItem Header="Show again" Command="{x:Static vm:InsightActions.Restore}" CommandParameter="{Binding}" />
+                                </MenuItem>
+                            </Menu>
+                        </Grid>
+                        <DataTemplate.Triggers>
+                            <DataTrigger Binding="{Binding Severity}" Value="Good">
+                                <Setter TargetName="DismissMenu" Property="Visibility" Value="Collapsed" />
+                            </DataTrigger>
+                        </DataTemplate.Triggers>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <TextBlock Text="Nothing to show in this area." Style="{StaticResource BodySecondary}" Margin="0,8,0,0"
+                       Visibility="{Binding IsEmptyFilter, Converter={StaticResource Vis}}" />
+            <ContentControl ContentTemplate="{StaticResource SkeletonCards}" Focusable="False"
+                            Visibility="{Binding Areas.Count, Converter={StaticResource Vis}, ConverterParameter=invert}" />
+
+            <DockPanel Margin="0,12,0,0">
+                <Button DockPanel.Dock="Right" Style="{StaticResource GhostButton}" Command="{Binding ToggleHiddenCommand}" Content="{Binding HiddenText}"
+                        Visibility="{Binding HiddenCount, Converter={StaticResource Vis}}" />
+                <TextBlock Style="{StaticResource Caption}" VerticalAlignment="Center" TextWrapping="Wrap"
+                           Text="Scores start at 100 per area: −35 for each critical finding, −15 for each warning, −3 for each tip. Live checks re-run every few seconds." />
+            </DockPanel>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

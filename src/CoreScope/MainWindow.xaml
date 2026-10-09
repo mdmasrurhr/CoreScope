@@ -1,0 +1,235 @@
+<Window x:Class="CoreScope.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="clr-namespace:CoreScope.Core.ViewModels"
+        mc:Ignorable="d"
+        d:DataContext="{d:DesignInstance Type=vm:MainViewModel}"
+        Title="CoreScope"
+        Icon="Assets/CoreScope.ico"
+        FontFamily="{DynamicResource UiFont}"
+        FontSize="{DynamicResource FontBody}"
+        Width="1240" Height="800" MinWidth="960" MinHeight="620"
+        WindowStartupLocation="CenterScreen">
+    <Window.Resources>
+        <!-- Navigation item: hover = subtle fill, selected = accent wash + glow (Appearance → Glow). Works in all three layouts. -->
+        <Style x:Key="NavItem" TargetType="ListBoxItem">
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Margin" Value="0,2" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="FocusVisualStyle" Value="{StaticResource FocusRing}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListBoxItem">
+                        <Border x:Name="Pill" Background="Transparent" CornerRadius="{DynamicResource RadiusSmall}" Padding="8,4">
+                            <ContentPresenter TextElement.Foreground="{TemplateBinding Foreground}" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Pill" Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="Pill" Property="Background" Value="{DynamicResource AccentWash}" />
+                                <Setter TargetName="Pill" Property="Effect" Value="{DynamicResource AccentGlowEffect}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Sidebar pages grouped into sections (Tools, Hardware, Live) -->
+        <CollectionViewSource x:Key="GroupedPages" Source="{Binding Pages}">
+            <CollectionViewSource.GroupDescriptions>
+                <PropertyGroupDescription PropertyName="Group" />
+            </CollectionViewSource.GroupDescriptions>
+        </CollectionViewSource>
+    </Window.Resources>
+    <Window.InputBindings>
+        <KeyBinding Key="K" Modifiers="Control" Command="{Binding Search.OpenCommand}" />
+        <KeyBinding Key="F" Modifiers="Control" Command="{Binding Search.OpenCommand}" />
+    </Window.InputBindings>
+    <Grid x:Name="Root">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="240" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- Window wash: theme tint / gradient over the Mica or Acrylic backdrop (alpha = the Transparency setting) -->
+        <Border Grid.ColumnSpan="2" Grid.RowSpan="2" Background="{DynamicResource WindowBase}" IsHitTestVisible="False" />
+
+        <!-- ───────── Sidebar ───────── -->
+        <Grid x:Name="SidebarHost" Grid.RowSpan="2">
+        <Border x:Name="SidebarLayer" Background="{DynamicResource SidebarFill}"
+                BorderThickness="0,0,1,0" BorderBrush="{DynamicResource DividerStrokeColorDefaultBrush}" />
+        <DockPanel x:Name="SidebarDock" Margin="12,16,8,12">
+            <StackPanel x:Name="LogoPanel" DockPanel.Dock="Top" Orientation="Horizontal" Margin="12,4,0,24">
+                <Image Source="Assets/CoreScope.ico" Width="32" Height="32" RenderOptions.BitmapScalingMode="HighQuality" />
+                <StackPanel x:Name="LogoText" Margin="12,0,0,0" VerticalAlignment="Center">
+                    <TextBlock Text="CoreScope" Style="{StaticResource SectionTitle}" />
+                    <TextBlock Text="Hardware insight" Style="{StaticResource Caption}" />
+                </StackPanel>
+            </StackPanel>
+
+            <StackPanel x:Name="StatusPanel" DockPanel.Dock="Bottom" Orientation="Horizontal" Margin="12,8,0,0">
+                <Ellipse Width="8" Height="8" Fill="{StaticResource SevGood}" VerticalAlignment="Center"
+                         Visibility="{Binding IsBusy, Converter={StaticResource Vis}, ConverterParameter=invert}" />
+                <TextBlock x:Name="StatusLabel" Text="{Binding StatusText}" Style="{StaticResource Caption}" Margin="8,0,0,0"
+                           Typography.NumeralAlignment="Tabular" />
+            </StackPanel>
+
+            <!-- Search (Ctrl+K) -->
+            <Button x:Name="SearchButton" DockPanel.Dock="Top" Command="{Binding Search.OpenCommand}" Margin="4,0,4,12" Padding="12,8"
+                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                    AutomationProperties.Name="Search (Ctrl+K)" ToolTip="Search everything (Ctrl+K)">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Style="{StaticResource Glyph}" Text="&#xE721;" Margin="0,0,12,0" />
+                    <TextBlock x:Name="SearchLabel" Grid.Column="1" Text="Search" Style="{StaticResource BodySecondary}" VerticalAlignment="Center" />
+                    <Border x:Name="SearchChip" Grid.Column="2" Style="{StaticResource Chip}" Margin="8,0,0,0" Padding="8,0" VerticalAlignment="Center">
+                        <TextBlock Text="Ctrl K" Style="{StaticResource Caption}" />
+                    </Border>
+                </Grid>
+            </Button>
+
+            <ListBox x:Name="NavList" VirtualizingPanel.IsVirtualizing="False" PreviewMouseWheel="NavList_PreviewMouseWheel" ItemsSource="{Binding Source={StaticResource GroupedPages}}"
+                     SelectedItem="{Binding SelectedPage, Mode=TwoWay}"
+                     Background="Transparent" BorderThickness="0"
+                     HorizontalContentAlignment="Stretch"
+                     ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                     ItemContainerStyle="{StaticResource NavItem}"
+                     AutomationProperties.Name="Pages">
+                <ListBox.GroupStyle>
+                    <GroupStyle>
+                        <GroupStyle.HeaderTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Name}" Style="{StaticResource Overline}" Margin="16,16,0,4"
+                                           Visibility="{Binding Name, Converter={StaticResource GroupHeaderVis}}" />
+                            </DataTemplate>
+                        </GroupStyle.HeaderTemplate>
+                    </GroupStyle>
+                </ListBox.GroupStyle>
+                <ListBox.ItemTemplate>
+                    <DataTemplate DataType="{x:Type vm:PageViewModel}">
+                        <DockPanel Margin="4,4" MinWidth="{DynamicResource NavItemMinWidth}" ToolTip="{Binding Title}">
+                            <!-- Badge: tinted pill, theme-colored text (readable in light and dark) -->
+                            <Border DockPanel.Dock="Right" CornerRadius="{DynamicResource RadiusPill}" MinWidth="{DynamicResource NavBadgeMinWidth}" MaxWidth="{DynamicResource NavBadgeMaxWidth}" Height="20" Padding="8,0" ClipToBounds="True"
+                                    Background="{StaticResource SevWarningTint}"
+                                    Visibility="{Binding Badge, Converter={StaticResource Vis}}">
+                                <TextBlock Text="{Binding Badge}" Style="{StaticResource Caption}" FontWeight="SemiBold"
+                                           Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Border>
+                            <TextBlock Text="{Binding Glyph}" Style="{StaticResource Glyph}" Width="32" />
+                            <TextBlock Text="{Binding Title}" VerticalAlignment="Center" Visibility="{DynamicResource NavLabelVis}" />
+                        </DockPanel>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+        </DockPanel>
+        </Grid>
+
+        <!-- ───────── Content ───────── -->
+        <Grid x:Name="ContentHost" Grid.Column="1" Grid.RowSpan="2">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <ProgressBar Grid.Row="0" IsIndeterminate="True" Height="4" BorderThickness="0"
+                         Visibility="{Binding IsBusy, Converter={StaticResource Vis}}" />
+
+            <StackPanel Grid.Row="1">
+            <!-- Update available -->
+            <Border Margin="32,16,32,0" Padding="16,12" CornerRadius="{DynamicResource RadiusCard}"
+                    BorderThickness="1" BorderBrush="{StaticResource SevInfo}" Background="{StaticResource SevInfoTint}"
+                    Visibility="{Binding Update.IsAvailable, Converter={StaticResource Vis}}">
+                <DockPanel>
+                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0,0,0">
+                        <Button Style="{StaticResource GhostButton}" Content="What's new" Command="{Binding Update.OpenNotesCommand}" />
+                        <Button Style="{StaticResource GhostButton}" Content="Later" Command="{Binding Update.LaterCommand}" />
+                        <Button Style="{StaticResource PrimaryButton}" Content="{Binding Update.InstallText}" Command="{Binding Update.InstallCommand}"
+                                IsEnabled="{Binding Update.CanInstall}" Padding="16,8" MinWidth="96" Margin="8,0,0,0" />
+                    </StackPanel>
+                    <TextBlock Style="{StaticResource Glyph}" Text="&#xE896;" Foreground="{StaticResource SevInfo}" Margin="0,0,12,0" VerticalAlignment="Center" />
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="{Binding Update.Title}" Style="{StaticResource BodyStrong}" />
+                        <TextBlock Text="{Binding Update.Status}" Style="{StaticResource Caption}" Margin="0,4,0,0"
+                                   Visibility="{Binding Update.Status, Converter={StaticResource Vis}}" />
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+
+            <Border Margin="32,16,32,0" Padding="16,12" CornerRadius="{DynamicResource RadiusCard}"
+                    BorderThickness="1" BorderBrush="{StaticResource SevWarning}" Background="{StaticResource SevWarningTint}"
+                    Visibility="{Binding ShowBanner, Converter={StaticResource Vis}}">
+                <DockPanel>
+                    <Button DockPanel.Dock="Right" Content="{Binding BannerAction}" Command="{Binding BannerCommand}"
+                            Style="{StaticResource PrimaryButton}" Padding="16,8" MinWidth="96"
+                            Margin="16,0,0,0" VerticalAlignment="Center"
+                            Visibility="{Binding BannerAction, Converter={StaticResource Vis}}" />
+                    <TextBlock Style="{StaticResource Glyph}" Text="&#xE7BA;" Foreground="{StaticResource SevWarning}" Margin="0,0,12,0" />
+                    <TextBlock Text="{Binding BannerText}" Style="{StaticResource BodyText}" VerticalAlignment="Center" />
+                </DockPanel>
+            </Border>
+            </StackPanel>
+
+            <ContentControl Grid.Row="2" Content="{Binding SelectedPage}" Focusable="False" />
+        </Grid>
+
+        <!-- ───────── Search palette (Ctrl+K) ───────── -->
+        <Grid Grid.ColumnSpan="2" Grid.RowSpan="2" Background="#66000000" Visibility="{Binding Search.IsOpen, Converter={StaticResource Vis}}"
+              MouseDown="SearchBackdrop_MouseDown">
+            <Border Width="640" MaxWidth="900" VerticalAlignment="Top" Margin="16,72,16,16" Padding="0" CornerRadius="{DynamicResource RadiusCard}"
+                    Background="{DynamicResource SolidBackgroundFillColorTertiaryBrush}" BorderThickness="1" BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                    MouseDown="SearchPanel_MouseDown">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="32" ShadowDepth="8" Opacity="0.3" />
+                </Border.Effect>
+                <DockPanel>
+                    <Grid DockPanel.Dock="Top" Margin="16,16,16,8">
+                        <TextBox x:Name="SearchBox" Text="{Binding Search.Query, UpdateSourceTrigger=PropertyChanged}" Padding="40,10,12,10"
+                                 FontSize="{DynamicResource FontSubtitle}" PreviewKeyDown="SearchBox_PreviewKeyDown"
+                                 AutomationProperties.Name="Search CoreScope" />
+                        <TextBlock Style="{StaticResource Glyph}" Text="&#xE721;" IsHitTestVisible="False" Margin="14,0,0,0" VerticalAlignment="Center" />
+                        <TextBlock Text="Search specs, settings, sensors, devices…" IsHitTestVisible="False" Margin="42,0,0,0" VerticalAlignment="Center"
+                                   Style="{StaticResource BodySecondary}"
+                                   Visibility="{Binding Search.Query, Converter={StaticResource Vis}, ConverterParameter=invert}" />
+                    </Grid>
+                    <TextBlock DockPanel.Dock="Bottom" Margin="16,8,16,12" Style="{StaticResource Caption}"
+                               Text="↑ ↓ to move · Enter to open · Esc to close" />
+                    <TextBlock DockPanel.Dock="Top" Margin="16,8" Style="{StaticResource BodySecondary}" Text="Nothing matches. Try fewer or different words."
+                               Visibility="{Binding Search.HasNoResults, Converter={StaticResource Vis}}" />
+                    <ListBox x:Name="SearchResults" ItemsSource="{Binding Search.Results}" SelectedItem="{Binding Search.Selected, Mode=TwoWay}"
+                             MaxHeight="420" Margin="8,0" BorderThickness="0" Background="Transparent"
+                             ScrollViewer.HorizontalScrollBarVisibility="Disabled" MouseDoubleClick="SearchResults_MouseDoubleClick"
+                             KeyboardNavigation.TabNavigation="Continue">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate DataType="{x:Type vm:SearchResult}">
+                                <DockPanel Margin="4,4">
+                                    <TextBlock DockPanel.Dock="Right" Text="{Binding Value}" Style="{StaticResource BodyStrong}" MaxWidth="260"
+                                               TextTrimming="CharacterEllipsis" VerticalAlignment="Center" Margin="12,0,0,0" />
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding Title}" Style="{StaticResource BodyText}" TextTrimming="CharacterEllipsis" />
+                                        <TextBlock Text="{Binding Path}" Style="{StaticResource Caption}" />
+                                    </StackPanel>
+                                </DockPanel>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </DockPanel>
+            </Border>
+        </Grid>
+    </Grid>
+</Window>

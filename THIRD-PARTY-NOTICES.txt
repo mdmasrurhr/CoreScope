@@ -1,0 +1,62 @@
+CoreScope - third-party software notices
+========================================
+
+CoreScope includes the following open-source components. Each is used unmodified, as distributed on
+NuGet. The source code of every MPL-2.0 component is available at the address listed with it.
+
+-------------------------------------------------------------------------------
+LibreHardwareMonitorLib 0.9.6
+  https://github.com/LibreHardwareMonitor/LibreHardwareMonitor
+  License: Mozilla Public License 2.0 (MPL-2.0)
+
+RAMSPDToolkit-NDD
+  https://github.com/Blacktempel/RAMSPDToolkit
+  License: Mozilla Public License 2.0 (MPL-2.0)
+
+DiskInfoToolkit
+  https://github.com/Blacktempel/DiskInfoToolkit
+  License: Mozilla Public License 2.0 (MPL-2.0)
+
+BlackSharp.Core
+  https://github.com/Blacktempel/BlackSharp
+  License: Mozilla Public License 2.0 (MPL-2.0)
+
+  The MPL-2.0 text is available at https://mozilla.org/MPL/2.0/
+  "This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of the
+  MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/."
+
+-------------------------------------------------------------------------------
+HidSharp
+  https://www.zer7.com/software/hidsharp
+  License: Apache License 2.0 - https://www.apache.org/licenses/LICENSE-2.0
+  Copyright James F. Bellinger
+
+-------------------------------------------------------------------------------
+Mono.Posix.NETStandard
+  https://github.com/mono/mono
+  License: MIT
+
+.NET runtime and libraries (System.Management, System.IO.Ports, WPF, Windows Forms, and the runtime
+included in the self-contained package)
+  https://github.com/dotnet/runtime  https://github.com/dotnet/wpf  https://github.com/dotnet/winforms
+  License: MIT. Copyright (c) .NET Foundation and Contributors
+
+C#/WinRT projection (WinRT.Runtime, Microsoft.Windows.SDK.NET)
+  https://github.com/microsoft/CsWinRT
+  License: MIT. Copyright (c) Microsoft Corporation
+
+MIT License
+  Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+  associated documentation files (the "Software"), to deal in the Software without restriction,
+  including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense,
+  and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so,
+  subject to the following conditions:
+
+  The above copyright notice and this permission notice shall be included in all copies or substantial
+  portions of the Software.
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT
+  LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+  NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+  WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+  SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.

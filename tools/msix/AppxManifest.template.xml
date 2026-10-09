@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- CoreScope MSIX manifest. make-msix.ps1 fills the {{...}} values; the Identity values must match what
+     Partner Center shows under Product identity once you reserve the app name. -->
+<Package
+  xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
+  xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
+  xmlns:uap5="http://schemas.microsoft.com/appx/manifest/uap/windows10/5"
+  xmlns:desktop="http://schemas.microsoft.com/appx/manifest/desktop/windows10"
+  xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
+  IgnorableNamespaces="uap uap5 desktop rescap">
+
+  <Identity Name="{{IdentityName}}" Publisher="{{Publisher}}" Version="{{Version}}" ProcessorArchitecture="x64" />
+
+  <Properties>
+    <DisplayName>CoreScope</DisplayName>
+    <PublisherDisplayName>{{PublisherDisplayName}}</PublisherDisplayName>
+    <Logo>Assets\StoreLogo.png</Logo>
+    <Description>Hardware information, live sensors, plain-English insights, upgrade advice and PC controls.</Description>
+  </Properties>
+
+  <Dependencies>
+    <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.19041.0" MaxVersionTested="10.0.26100.0" />
+  </Dependencies>
+
+  <Resources>
+    <Resource Language="en-us" />
+  </Resources>
+
+  <Applications>
+    <Application Id="CoreScope" Executable="app\CoreScope.exe" EntryPoint="Windows.FullTrustApplication">
+      <uap:VisualElements
+        DisplayName="CoreScope"
+        Description="Hardware information, live sensors and PC health"
+        BackgroundColor="transparent"
+        Square150x150Logo="Assets\Square150x150Logo.png"
+        Square44x44Logo="Assets\Square44x44Logo.png">
+        <uap:DefaultTile Wide310x150Logo="Assets\Wide310x150Logo.png" />
+      </uap:VisualElements>
+      <Extensions>
+        <!-- "Start with Windows" for Store installs (Settings → Start with Windows). Off until the user turns it on. -->
+        <desktop:Extension Category="windows.startupTask" Executable="app\CoreScope.exe" EntryPoint="Windows.FullTrustApplication">
+          <desktop:StartupTask TaskId="CoreScopeStartup" Enabled="false" DisplayName="CoreScope" />
+        </desktop:Extension>
+        <!-- Lets people (and the self-test instructions) run "corescope" with the selftest switch from Run or a terminal. -->
+        <uap5:Extension Category="windows.appExecutionAlias" Executable="app\CoreScope.exe" EntryPoint="Windows.FullTrustApplication">
+          <uap5:AppExecutionAlias>
+            <uap5:ExecutionAlias Alias="corescope.exe" />
+          </uap5:AppExecutionAlias>
+        </uap5:Extension>
+      </Extensions>
+    </Application>
+  </Applications>
+
+  <Capabilities>
+    <rescap:Capability Name="runFullTrust" />
+    <!-- Needed for "Unlock full sensors" (restarts the app elevated after a UAC prompt). Requires Store approval:
+         explain it in the submission's "Notes for certification" (see STORE-SUBMISSION.md). -->
+    <rescap:Capability Name="allowElevation" />
+  </Capabilities>
+</Package>

@@ -1,0 +1,26 @@
+PackageIdentifier: Rakin.CoreScope
+PackageVersion: {{VERSION}}
+PackageLocale: en-US
+Publisher: Rakin
+PublisherUrl: {{REPO_URL}}
+PackageName: CoreScope
+PackageUrl: {{REPO_URL}}
+License: Freeware
+ShortDescription: Hardware information, live sensors, plain-English insights, upgrade advice and PC controls for Windows.
+Description: |-
+  CoreScope shows every part of your PC in detail (CPU, memory timings, graphics, storage health, motherboard and
+  devices), live sensors with graphs and an overlay, plain-English health insights, an upgrade guide that tells you
+  what's soldered and what fits, a quick benchmark, and a control center for display, power, battery care, radios,
+  fans and startup apps.
+Moniker: corescope
+Tags:
+  - hardware
+  - system-information
+  - sensors
+  - monitoring
+  - benchmark
+  - cpu
+  - temperature
+ReleaseNotesUrl: {{RELEASE_URL}}
+ManifestType: defaultLocale
+ManifestVersion: 1.9.0

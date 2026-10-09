@@ -1,0 +1,454 @@
+<UserControl x:Class="CoreScope.Views.AppearanceView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <UserControl.Resources>
+        <Style x:Key="Field" TargetType="ComboBox" BasedOn="{StaticResource {x:Type ComboBox}}">
+            <Setter Property="MinWidth" Value="240" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+        <Style x:Key="SettingRow" TargetType="DockPanel">
+            <Setter Property="Margin" Value="0,0,0,16" />
+        </Style>
+        <Style x:Key="ScopeCheck" TargetType="CheckBox" BasedOn="{StaticResource {x:Type CheckBox}}">
+            <Setter Property="Margin" Value="0,0,16,0" />
+        </Style>
+
+        <!-- A picker card (skin, layout): theme fill, accent outline on hover, thick accent ring when selected. -->
+        <Style x:Key="OptionCard" TargetType="Button">
+            <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="FocusVisualStyle" Value="{StaticResource FocusRing}" />
+            <Setter Property="Margin" Value="0,0,12,12" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Surface" Style="{StaticResource Card}" Padding="12" BorderThickness="1">
+                            <ContentPresenter TextElement.Foreground="{TemplateBinding Foreground}" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Surface" Property="BorderBrush" Value="{DynamicResource AccentFillColorDefaultBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Surface" Property="Opacity" Value="0.85" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Miniature window: shows the layout (sidebar / rail / top tabs) in the colours of the skin. -->
+        <DataTemplate x:Key="Preview">
+            <Border Width="200" Height="96" CornerRadius="6" Background="{Binding Background}" ClipToBounds="True">
+                <Grid>
+                    <Border x:Name="Nav" Background="{Binding Sidebar}" HorizontalAlignment="Left" VerticalAlignment="Stretch" Width="44"
+                            BorderThickness="0,0,1,0" BorderBrush="#22808080">
+                        <StackPanel x:Name="NavItems" Margin="8" Orientation="Vertical">
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                <Ellipse Width="6" Height="6" Fill="{Binding Accent}" />
+                                <Rectangle Width="16" Height="4" Fill="{Binding Accent}" Opacity="0.5" Margin="4,0,0,0" RadiusX="2" RadiusY="2" />
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                <Ellipse Width="6" Height="6" Fill="#55808080" />
+                                <Rectangle Width="16" Height="4" Fill="#33808080" Margin="4,0,0,0" RadiusX="2" RadiusY="2" />
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <Ellipse Width="6" Height="6" Fill="#55808080" />
+                                <Rectangle Width="16" Height="4" Fill="#33808080" Margin="4,0,0,0" RadiusX="2" RadiusY="2" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                    <UniformGrid x:Name="Cards" Columns="2" Margin="48,6,6,6">
+                        <Border Background="{Binding Surface}" CornerRadius="3" Margin="3" />
+                        <Border Background="{Binding Surface}" CornerRadius="3" Margin="3" />
+                        <Border Background="{Binding Surface}" CornerRadius="3" Margin="3" />
+                        <Border Background="{Binding Accent}" Opacity="0.85" CornerRadius="3" Margin="3" />
+                    </UniformGrid>
+                </Grid>
+            </Border>
+            <DataTemplate.Triggers>
+                    <DataTrigger Binding="{Binding Layout}" Value="Rail">
+                        <Setter TargetName="Nav" Property="Width" Value="18" />
+                        <Setter TargetName="NavItems" Property="Margin" Value="6" />
+                        <Setter TargetName="Cards" Property="Margin" Value="22,6,6,6" />
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding Layout}" Value="TopBar">
+                        <Setter TargetName="Nav" Property="Width" Value="NaN" />
+                        <Setter TargetName="Nav" Property="Height" Value="20" />
+                        <Setter TargetName="Nav" Property="VerticalAlignment" Value="Top" />
+                        <Setter TargetName="Nav" Property="HorizontalAlignment" Value="Stretch" />
+                        <Setter TargetName="Nav" Property="BorderThickness" Value="0,0,0,1" />
+                        <Setter TargetName="NavItems" Property="Orientation" Value="Horizontal" />
+                        <Setter TargetName="NavItems" Property="Margin" Value="8,6" />
+                        <Setter TargetName="Cards" Property="Margin" Value="6,26,6,6" />
+                    </DataTrigger>
+                </DataTemplate.Triggers>
+        </DataTemplate>
+
+        <DataTemplate x:Key="PickerCardTemplate">
+            <Grid>
+                <StackPanel>
+                    <ContentControl Content="{Binding}" ContentTemplate="{StaticResource Preview}" HorizontalAlignment="Left" Focusable="False" />
+                    <TextBlock Text="{Binding Name}" Style="{StaticResource BodyStrong}" Margin="0,8,0,0" />
+                    <TextBlock Text="{Binding Description}" Style="{StaticResource Caption}" Margin="0,2,0,0" MaxWidth="200" />
+                </StackPanel>
+                <Border BorderThickness="2" BorderBrush="{DynamicResource AccentFillColorDefaultBrush}" CornerRadius="{DynamicResource RadiusSmall}"
+                        Margin="-12" IsHitTestVisible="False" Visibility="{Binding IsSelected, Converter={StaticResource Vis}}" />
+            </Grid>
+        </DataTemplate>
+    </UserControl.Resources>
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Margin="{DynamicResource PagePadding}" MaxWidth="{StaticResource PageMaxWidth}" HorizontalAlignment="Stretch">
+            <TextBlock Text="APPEARANCE" Style="{StaticResource Overline}" />
+            <TextBlock Text="Make it yours" Style="{StaticResource Headline}" />
+            <DockPanel Margin="0,4,0,24">
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                    <Button Content="Reset to skin" Command="{Binding ResetSkinCommand}" Padding="16,8" Margin="0,0,8,0" />
+                    <Button Content="Reset everything" Command="{Binding ResetAllCommand}" Padding="16,8" />
+                </StackPanel>
+                <TextBlock Style="{StaticResource SubHeadline}" VerticalAlignment="Center">
+                    <Run Text="Changes apply instantly and are saved. Current look:" />
+                    <Run Text="{Binding CurrentSkinName, Mode=OneWay}" FontWeight="SemiBold" />
+                </TextBlock>
+            </DockPanel>
+
+            <!-- Theme mode -->
+            <Border Style="{StaticResource Card}" Margin="{DynamicResource CardGap}">
+                <DockPanel>
+                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                        <RadioButton GroupName="Mode" Content="System default" IsChecked="{Binding ModeSystem, Mode=TwoWay}" Margin="0,0,16,0" />
+                        <RadioButton GroupName="Mode" Content="Light" IsChecked="{Binding ModeLight, Mode=TwoWay}" Margin="0,0,16,0" />
+                        <RadioButton GroupName="Mode" Content="Dark" IsChecked="{Binding ModeDark, Mode=TwoWay}" />
+                    </StackPanel>
+                    <StackPanel>
+                        <TextBlock Text="Theme" Style="{StaticResource TitleText}" />
+                        <TextBlock Text="Follow Windows, or always use light or dark." Style="{StaticResource Caption}" Margin="0,4,0,0" />
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+
+            <!-- Skins -->
+            <Border Style="{StaticResource Card}" Margin="{DynamicResource CardGap}">
+                <StackPanel>
+                    <TextBlock Text="Skins" Style="{StaticResource TitleText}" />
+                    <TextBlock Text="A skin sets the colours, glass, glow, font, shape and window layout in one go. Tweak anything below afterwards."
+                               Style="{StaticResource Caption}" Margin="0,4,0,16" />
+                    <ItemsControl ItemsSource="{Binding Skins}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Button Style="{StaticResource OptionCard}" ContentTemplate="{StaticResource PickerCardTemplate}" Content="{Binding}"
+                                        Command="{Binding DataContext.SelectSkinCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                        CommandParameter="{Binding}" AutomationProperties.Name="{Binding Name}" />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+
+            <!-- Layout -->
+            <Border Style="{StaticResource Card}" Margin="{DynamicResource CardGap}">
+                <StackPanel>
+                    <TextBlock Text="Window layout" Style="{StaticResource TitleText}" />
+                    <TextBlock Text="Where navigation lives. Every layout keeps all pages." Style="{StaticResource Caption}" Margin="0,4,0,16" />
+                    <ItemsControl ItemsSource="{Binding Layouts}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Button Style="{StaticResource OptionCard}" ContentTemplate="{StaticResource PickerCardTemplate}" Content="{Binding}"
+                                        Command="{Binding DataContext.SelectLayoutCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                        CommandParameter="{Binding}" AutomationProperties.Name="{Binding Name}" />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <DockPanel Margin="0,4,0,0">
+                        <ToggleButton DockPanel.Dock="Right" Style="{StaticResource Switch}" IsChecked="{Binding CompactSpacing, Mode=TwoWay}" AutomationProperties.Name="Compact spacing" />
+                        <StackPanel>
+                            <TextBlock Text="Compact spacing" Style="{StaticResource BodyStrong}" />
+                            <TextBlock Text="Tighter padding between cards, so more fits on screen." Style="{StaticResource Caption}" Margin="0,4,0,0" />
+                        </StackPanel>
+                    </DockPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- Colour -->
+            <Border Style="{StaticResource Card}" Margin="{DynamicResource CardGap}">
+                <StackPanel>
+                    <TextBlock Text="Colour" Style="{StaticResource TitleText}" />
+                    <TextBlock Style="{StaticResource Caption}" Margin="0,4,0,16">
+                        <Run Text="Accent colour for buttons, selection, switches and links. Now:" />
+                        <Run Text="{Binding AccentSummary, Mode=OneWay}" FontWeight="SemiBold" />
+                    </TextBlock>
+                    <ItemsControl ItemsSource="{Binding Swatches}" Margin="0,0,0,8">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Button Width="32" Height="32" Margin="0,0,8,8" Cursor="Hand" ToolTip="{Binding Name}"
+                                        Command="{Binding DataContext.SelectAccentCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                        CommandParameter="{Binding}" AutomationProperties.Name="{Binding Name}" FocusVisualStyle="{StaticResource FocusRing}">
+                                    <Button.Template>
+                                        <ControlTemplate TargetType="Button">
+                                            <Grid>
+                                                <Ellipse x:Name="Ring" Stroke="{DynamicResource TextFillColorPrimaryBrush}" StrokeThickness="2" Visibility="Collapsed" />
+                                                <Ellipse x:Name="Dot" Fill="{Binding Brush}" Margin="4" />
+                                            </Grid>
+                                            <ControlTemplate.Triggers>
+                                                <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                                                    <Setter TargetName="Ring" Property="Visibility" Value="Visible" />
+                                                </DataTrigger>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter TargetName="Dot" Property="Margin" Value="2" />
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </Button.Template>
+                                </Button>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <DockPanel Style="{StaticResource SettingRow}" Margin="0,8,0,16">
+                        <Button DockPanel.Dock="Right" Style="{StaticResource GhostButton}" Content="Use Windows accent" Command="{Binding UseWindowsAccentCommand}" />
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="Custom colour" Style="{StaticResource BodyStrong}" VerticalAlignment="Center" Margin="0,0,12,0" />
+                            <TextBox Width="140" ToolTip="Type a colour such as #7C6CFF, then press Tab" Text="{Binding AccentText, UpdateSourceTrigger=LostFocus}" AutomationProperties.Name="Accent colour hex" />
+                            <TextBlock Text="{Binding AccentError}" Foreground="{StaticResource SevCritical}" Style="{StaticResource Caption}" VerticalAlignment="Center" Margin="12,0,0,0"
+                                       Visibility="{Binding HasAccentError, Converter={StaticResource Vis}}" />
+                        </StackPanel>
+                    </DockPanel>
+
+                    <Grid Margin="0,0,0,8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="240" />
+                            <ColumnDefinition Width="48" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="Colour wash" Style="{StaticResource BodyStrong}" />
+                            <TextBlock Text="How much accent colour tints the surfaces." Style="{StaticResource Caption}" Margin="0,4,0,0" />
+                        </StackPanel>
+                        <Slider Grid.Column="1" Minimum="0" Maximum="100" SmallChange="1" LargeChange="10" Value="{Binding Tint, Mode=TwoWay}" VerticalAlignment="Center" AutomationProperties.Name="Colour wash" />
+                        <TextBlock Grid.Column="2" Text="{Binding Tint, StringFormat={}{0:0}%}" Style="{StaticResource BodySecondary}" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                    </Grid>
+                    <WrapPanel>
+                        <TextBlock Text="Apply wash to" Style="{StaticResource Caption}" VerticalAlignment="Center" Margin="0,0,16,0" />
+                        <CheckBox Style="{StaticResource ScopeCheck}" Content="Window" IsChecked="{Binding TintWindow, Mode=TwoWay}" />
+                        <CheckBox Style="{StaticResource ScopeCheck}" Content="Sidebar" IsChecked="{Binding TintSidebar, Mode=TwoWay}" />
+                        <CheckBox Style="{StaticResource ScopeCheck}" Content="Cards" IsChecked="{Binding TintCards, Mode=TwoWay}" />
+                        <CheckBox Style="{StaticResource ScopeCheck}" Content="Title bar" IsChecked="{Binding TintTitleBar, Mode=TwoWay}" />
+                    </WrapPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- Per-page accent -->
+            <Border Style="{StaticResource Card}" Margin="{DynamicResource CardGap}">
+                <StackPanel>
+                    <DockPanel Margin="0,0,0,16">
+                        <ToggleButton DockPanel.Dock="Right" Style="{StaticResource Switch}" IsChecked="{Binding PageAccentsEnabled, Mode=TwoWay}" AutomationProperties.Name="Colour-code pages" />
+                        <StackPanel>
+                            <TextBlock Text="Colour-code pages" Style="{StaticResource TitleText}" />
+                            <TextBlock Text="Each page gets its own accent colour as you move around. Pick a page below to change its colour." Style="{StaticResource Caption}" Margin="0,4,0,0" />
+                        </StackPanel>
+                    </DockPanel>
+                    <StackPanel IsEnabled="{Binding PageAccentsEnabled}">
+                        <DockPanel Style="{StaticResource SettingRow}">
+                            <ComboBox DockPanel.Dock="Right" Style="{StaticResource Field}" ItemsSource="{Binding PageChoices}" SelectedItem="{Binding AccentPage, Mode=TwoWay}" AutomationProperties.Name="Page to colour" />
+                            <TextBlock Text="{Binding PageAccentSummary}" Style="{StaticResource BodyStrong}" VerticalAlignment="Center" />
+                        </DockPanel>
+                        <ItemsControl ItemsSource="{Binding PageSwatches}" Margin="0,0,0,4">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Button Width="32" Height="32" Margin="0,0,8,8" Cursor="Hand" ToolTip="{Binding Name}"
+                                            Command="{Binding DataContext.SetPageAccentCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                            CommandParameter="{Binding}" AutomationProperties.Name="{Binding Name, StringFormat='Page accent {0}'}" FocusVisualStyle="{StaticResource FocusRing}">
+                                        <Button.Template>
+                                            <ControlTemplate TargetType="Button">
+                                                <Grid>
+                                                    <Ellipse x:Name="Ring" Stroke="{DynamicResource TextFillColorPrimaryBrush}" StrokeThickness="2" Visibility="Collapsed" />
+                                                    <Ellipse x:Name="Dot" Fill="{Binding Brush}" Margin="4" />
+                                                </Grid>
+                                                <ControlTemplate.Triggers>
+                                                    <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                                                        <Setter TargetName="Ring" Property="Visibility" Value="Visible" />
+                                                    </DataTrigger>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter TargetName="Dot" Property="Margin" Value="2" />
+                                                    </Trigger>
+                                                </ControlTemplate.Triggers>
+                                            </ControlTemplate>
+                                        </Button.Template>
+                                    </Button>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <Button Style="{StaticResource GhostButton}" Content="Back to automatic colour for this page" Command="{Binding ClearPageAccentCommand}" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- Glass -->
+            <Border Style="{StaticResource Card}" Margin="{DynamicResource CardGap}">
+                <StackPanel>
+                    <TextBlock Text="Glass and transparency" Style="{StaticResource TitleText}" />
+                    <TextBlock Text="How much of the backdrop shows through each part of the window." Style="{StaticResource Caption}" Margin="0,4,0,16" />
+                    <DockPanel Style="{StaticResource SettingRow}">
+                        <ComboBox DockPanel.Dock="Right" Style="{StaticResource Field}" ItemsSource="{Binding BackdropOptions}" SelectedItem="{Binding Backdrop, Mode=TwoWay}" AutomationProperties.Name="Window backdrop" />
+                        <StackPanel>
+                            <TextBlock Text="Window backdrop" Style="{StaticResource BodyStrong}" />
+                            <TextBlock Text="Mica and Acrylic need Windows 11." Style="{StaticResource Caption}" Margin="0,4,0,0" />
+                        </StackPanel>
+                    </DockPanel>
+                    <Grid Margin="0,0,0,8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="240" />
+                            <ColumnDefinition Width="48" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="Transparency" Style="{StaticResource BodyStrong}" />
+                            <TextBlock Text="0% is solid, 100% is most see-through." Style="{StaticResource Caption}" Margin="0,4,0,0" />
+                        </StackPanel>
+                        <Slider Grid.Column="1" Minimum="0" Maximum="100" SmallChange="1" LargeChange="10" Value="{Binding Transparency, Mode=TwoWay}" VerticalAlignment="Center" AutomationProperties.Name="Transparency" />
+                        <TextBlock Grid.Column="2" Text="{Binding Transparency, StringFormat={}{0:0}%}" Style="{StaticResource BodySecondary}" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                    </Grid>
+                    <WrapPanel>
+                        <TextBlock Text="Apply to" Style="{StaticResource Caption}" VerticalAlignment="Center" Margin="0,0,16,0" />
+                        <CheckBox Style="{StaticResource ScopeCheck}" Content="Window background" IsChecked="{Binding TransparencyWindow, Mode=TwoWay}" IsEnabled="{Binding HasBackdrop}" />
+                        <CheckBox Style="{StaticResource ScopeCheck}" Content="Sidebar" IsChecked="{Binding TransparencySidebar, Mode=TwoWay}" />
+                        <CheckBox Style="{StaticResource ScopeCheck}" Content="Cards" IsChecked="{Binding TransparencyCards, Mode=TwoWay}" />
+                    </WrapPanel>
+                    <TextBlock Text="Window transparency needs Mica or Acrylic; with a solid backdrop only the sidebar and cards can be translucent."
+                               Style="{StaticResource Caption}" Margin="0,8,0,0" Visibility="{Binding HasBackdrop, Converter={StaticResource Vis}, ConverterParameter=invert}" />
+                </StackPanel>
+            </Border>
+
+            <!-- Glow -->
+            <Border Style="{StaticResource Card}" Margin="{DynamicResource CardGap}">
+                <StackPanel>
+                    <TextBlock Text="Glow" Style="{StaticResource TitleText}" />
+                    <TextBlock Text="A soft halo in the accent colour. Glow on cards uses more graphics power; leave it off on older PCs." Style="{StaticResource Caption}" Margin="0,4,0,16" />
+                    <Grid Margin="0,0,0,8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="240" />
+                            <ColumnDefinition Width="48" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Glow strength" Style="{StaticResource BodyStrong}" VerticalAlignment="Center" />
+                        <Slider Grid.Column="1" Minimum="0" Maximum="100" SmallChange="1" LargeChange="10" Value="{Binding Glow, Mode=TwoWay}" VerticalAlignment="Center" AutomationProperties.Name="Glow strength" />
+                        <TextBlock Grid.Column="2" Text="{Binding Glow, StringFormat={}{0:0}%}" Style="{StaticResource BodySecondary}" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                    </Grid>
+                    <WrapPanel>
+                        <TextBlock Text="Apply to" Style="{StaticResource Caption}" VerticalAlignment="Center" Margin="0,0,16,0" />
+                        <CheckBox Style="{StaticResource ScopeCheck}" Content="Buttons and selected tab" IsChecked="{Binding GlowAccent, Mode=TwoWay}" />
+                        <CheckBox Style="{StaticResource ScopeCheck}" Content="Cards" IsChecked="{Binding GlowCards, Mode=TwoWay}" />
+                        <CheckBox Style="{StaticResource ScopeCheck}" Content="Headings" IsChecked="{Binding GlowHeadings, Mode=TwoWay}" />
+                    </WrapPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- Type and shape -->
+            <Border Style="{StaticResource Card}" Margin="{DynamicResource CardGap}">
+                <StackPanel>
+                    <TextBlock Text="Text and shape" Style="{StaticResource TitleText}" Margin="0,0,0,16" />
+                    <DockPanel Style="{StaticResource SettingRow}">
+                        <ComboBox DockPanel.Dock="Right" Style="{StaticResource Field}" ItemsSource="{Binding Fonts}" SelectedItem="{Binding FontName, Mode=TwoWay}" AutomationProperties.Name="Font">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding}" FontFamily="{Binding}" />
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                        <StackPanel>
+                            <TextBlock Text="Font" Style="{StaticResource BodyStrong}" />
+                            <TextBlock Text="Only fonts installed on this PC are listed." Style="{StaticResource Caption}" Margin="0,4,0,0" />
+                        </StackPanel>
+                    </DockPanel>
+                    <DockPanel Style="{StaticResource SettingRow}">
+                        <ComboBox DockPanel.Dock="Right" Style="{StaticResource Field}" ItemsSource="{Binding TextSizeOptions}" SelectedItem="{Binding TextSize, Mode=TwoWay}" AutomationProperties.Name="Text size" />
+                        <TextBlock Text="Text size" Style="{StaticResource BodyStrong}" VerticalAlignment="Center" />
+                    </DockPanel>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="240" />
+                            <ColumnDefinition Width="48" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="Corner roundness" Style="{StaticResource BodyStrong}" />
+                            <TextBlock Text="0 is square, 24 is very round." Style="{StaticResource Caption}" Margin="0,4,0,0" />
+                        </StackPanel>
+                        <Slider Grid.Column="1" Minimum="0" Maximum="24" SmallChange="2" LargeChange="4" TickFrequency="2" IsSnapToTickEnabled="True" Value="{Binding CornerRadius, Mode=TwoWay}" VerticalAlignment="Center" AutomationProperties.Name="Corner roundness" />
+                        <TextBlock Grid.Column="2" Text="{Binding CornerRadius, StringFormat={}{0:0}}" Style="{StaticResource BodySecondary}" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- My themes -->
+            <Border Style="{StaticResource Card}" Margin="{DynamicResource CardGap}">
+                <StackPanel>
+                    <TextBlock Text="My themes" Style="{StaticResource TitleText}" />
+                    <TextBlock Text="Keep your favourite looks. Saving captures everything on this page: skin, colours, glass, glow, font, shape and layout." Style="{StaticResource Caption}" Margin="0,4,0,16" />
+                    <DockPanel Margin="0,0,0,8">
+                        <Button DockPanel.Dock="Right" Content="Save current look" Command="{Binding SaveThemeCommand}" Style="{StaticResource PrimaryButton}" Margin="12,0,0,0" />
+                        <TextBox Text="{Binding NewThemeName, UpdateSourceTrigger=PropertyChanged}" MaxLength="40" AutomationProperties.Name="Theme name" ToolTip="Name your theme, then press Save" />
+                    </DockPanel>
+                    <ItemsControl ItemsSource="{Binding SavedThemeItems}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border BorderThickness="0,1,0,0" BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" Padding="0,8">
+                                    <DockPanel>
+                                        <Button DockPanel.Dock="Right" Style="{StaticResource GhostButton}" Content="Delete" Command="{Binding DeleteCommand}" AutomationProperties.Name="{Binding Name, StringFormat='Delete {0}'}" />
+                                        <Button DockPanel.Dock="Right" Style="{StaticResource GhostButton}" Content="Apply" Command="{Binding ApplyCommand}" AutomationProperties.Name="{Binding Name, StringFormat='Apply {0}'}" />
+                                        <TextBlock Text="{Binding Name}" Style="{StaticResource BodyStrong}" VerticalAlignment="Center" />
+                                    </DockPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <TextBlock Text="No saved themes yet." Style="{StaticResource Caption}" Margin="0,8,0,0"
+                               Visibility="{Binding HasSavedThemes, Converter={StaticResource Vis}, ConverterParameter=invert}" />
+                </StackPanel>
+            </Border>
+
+            <!-- Looks per page -->
+            <Border Style="{StaticResource Card}" Margin="{DynamicResource CardGap}">
+                <StackPanel>
+                    <TextBlock Text="A different look for a page" Style="{StaticResource TitleText}" />
+                    <TextBlock Text="Give any page its own skin or saved theme, layout included. It applies while you are on that page. This Appearance page always shows your main look, so you can see your edits."
+                               Style="{StaticResource Caption}" Margin="0,4,0,16" />
+                    <DockPanel Style="{StaticResource SettingRow}">
+                        <ComboBox DockPanel.Dock="Right" Style="{StaticResource Field}" ItemsSource="{Binding LookChoices}" SelectedItem="{Binding SelectedLook, Mode=TwoWay}" DisplayMemberPath="Label" AutomationProperties.Name="Look for this page" Margin="12,0,0,0" />
+                        <ComboBox DockPanel.Dock="Right" Style="{StaticResource Field}" ItemsSource="{Binding PageChoices}" SelectedItem="{Binding LookPage, Mode=TwoWay}" AutomationProperties.Name="Page" />
+                        <TextBlock Text="Page and look" Style="{StaticResource BodyStrong}" VerticalAlignment="Center" />
+                    </DockPanel>
+                    <TextBlock Text="{Binding LookSummary}" Style="{StaticResource Caption}" TextWrapping="Wrap" />
+                </StackPanel>
+            </Border>
+
+            <!-- Share -->
+            <Border Style="{StaticResource Card}" Margin="{DynamicResource CardGap}">
+                <StackPanel>
+                    <TextBlock Text="Share your theme" Style="{StaticResource TitleText}" />
+                    <TextBlock Text="Save everything on this page to a file, or load one a friend sent you. A theme file only holds appearance settings." Style="{StaticResource Caption}" Margin="0,4,0,16" />
+                    <StackPanel Orientation="Horizontal">
+                        <Button Content="Export theme…" Click="Export_Click" Padding="16,8" Margin="0,0,8,0" />
+                        <Button Content="Import theme…" Click="Import_Click" Padding="16,8" />
+                    </StackPanel>
+                    <TextBlock Text="{Binding ShareStatus}" Style="{StaticResource Caption}" Margin="0,12,0,0" TextWrapping="Wrap"
+                               Visibility="{Binding ShareStatus, Converter={StaticResource Vis}}" />
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

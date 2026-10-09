@@ -1,0 +1,605 @@
+<Application x:Class="CoreScope.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:sys="clr-namespace:System;assembly=mscorlib"
+             xmlns:vm="clr-namespace:CoreScope.Core.ViewModels"
+             xmlns:hw="clr-namespace:CoreScope.Core.Hardware"
+             xmlns:fx="clr-namespace:CoreScope.Core.Fixes"
+             xmlns:views="clr-namespace:CoreScope.Views"
+             xmlns:c="clr-namespace:CoreScope.Controls"
+             ShutdownMode="OnMainWindowClose">
+    <!--
+        CoreScope design system (follows the ui-ux-design-guide skill).
+        Fluent theme (light/dark + Windows accent) is applied in App.xaml.cs via ThemeMode.System.
+
+        Rules:  one typeface · 5-step type scale, max 24 px (dashboard) · 4-pt spacing only
+                semantic colors for meaning only · every interactive element has hover/pressed/focus/disabled
+    -->
+    <Application.Resources>
+        <ResourceDictionary>
+
+            <!-- ═════════════ Tokens ═════════════ -->
+
+            <!-- Typeface: one family. Icon font is separate by necessity. -->
+            <FontFamily x:Key="UiFont">Segoe UI Variable Text, Segoe UI</FontFamily>
+            <FontFamily x:Key="UiFontDisplay">Segoe UI Variable Display, Segoe UI</FontFamily>
+            <FontFamily x:Key="IconFont">Segoe Fluent Icons, Segoe MDL2 Assets</FontFamily>
+
+            <!-- Type scale (5 sizes, dashboard max 24). Line heights ≈ 117% headings, 143% body. -->
+            <sys:Double x:Key="FontCaption">12</sys:Double>
+            <sys:Double x:Key="FontBody">14</sys:Double>
+            <sys:Double x:Key="FontSubtitle">16</sys:Double>
+            <sys:Double x:Key="FontTitle">20</sys:Double>
+            <sys:Double x:Key="FontDisplay">24</sys:Double>
+
+            <!-- Icon sizes = line height of the text they sit beside -->
+            <sys:Double x:Key="IconSmall">12</sys:Double>
+            <sys:Double x:Key="IconBody">16</sys:Double>
+            <sys:Double x:Key="IconTitle">20</sys:Double>
+
+            <!-- Spacing (4-pt grid) -->
+            <Thickness x:Key="PagePadding">32,24,32,32</Thickness>
+            <Thickness x:Key="CardPadding">20,16</Thickness>
+            <Thickness x:Key="CardGap">0,0,0,12</Thickness>
+            <Thickness x:Key="SectionGap">0,0,0,24</Thickness>
+            <sys:Double x:Key="PageMaxWidth">1100</sys:Double>
+
+            <!-- Radius steps: 4 controls/chips · 8 cards · 12 pills -->
+            <CornerRadius x:Key="RadiusSmall">4</CornerRadius>
+            <CornerRadius x:Key="RadiusCard">8</CornerRadius>
+            <CornerRadius x:Key="RadiusPill">12</CornerRadius>
+
+            <!-- Semantic colors: solid for icons/stripes, tints for backgrounds (readable in light AND dark). -->
+            <SolidColorBrush x:Key="SevCritical" Color="#E5484D" />
+            <SolidColorBrush x:Key="SevWarning" Color="#F59E0B" />
+            <SolidColorBrush x:Key="SevInfo" Color="#3B82F6" />
+            <SolidColorBrush x:Key="SevGood" Color="#10B981" />
+            <SolidColorBrush x:Key="SevNeutral" Color="#8B8B8B" />
+            <SolidColorBrush x:Key="SevCriticalTint" Color="#E5484D" Opacity="0.16" />
+            <SolidColorBrush x:Key="SevWarningTint" Color="#F59E0B" Opacity="0.16" />
+            <SolidColorBrush x:Key="SevInfoTint" Color="#3B82F6" Opacity="0.16" />
+            <SolidColorBrush x:Key="SevGoodTint" Color="#10B981" Opacity="0.16" />
+            <SolidColorBrush x:Key="SevNeutralTint" Color="#8B8B8B" Opacity="0.16" />
+
+            <c:VisibilityConverter x:Key="Vis" />
+            <c:GroupHeaderVisibilityConverter x:Key="GroupHeaderVis" />
+
+            <!-- ═════════════ Text styles ═════════════ -->
+
+            <Style x:Key="Overline" TargetType="TextBlock">
+                <Setter Property="FontSize" Value="{DynamicResource FontCaption}" />
+                <Setter Property="FontWeight" Value="SemiBold" />
+                <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
+                <Setter Property="Margin" Value="0,0,0,4" />
+            </Style>
+            <!-- Back-compat alias -->
+            <Style x:Key="PageTitle" TargetType="TextBlock" BasedOn="{StaticResource Overline}" />
+
+            <Style x:Key="Headline" TargetType="TextBlock">
+                <Setter Property="Effect" Value="{DynamicResource TextGlowEffect}" />
+                <Setter Property="FontFamily" Value="{DynamicResource UiFontDisplay}" />
+                <Setter Property="FontSize" Value="{DynamicResource FontDisplay}" />
+                <Setter Property="FontWeight" Value="SemiBold" />
+                <Setter Property="TextWrapping" Value="Wrap" />
+                <Setter Property="LineStackingStrategy" Value="BlockLineHeight" />
+                <Setter Property="LineHeight" Value="{DynamicResource LineDisplay}" />
+            </Style>
+            <Style x:Key="SubHeadline" TargetType="TextBlock">
+                <Setter Property="FontSize" Value="{DynamicResource FontBody}" />
+                <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
+                <Setter Property="TextWrapping" Value="Wrap" />
+                <Setter Property="LineStackingStrategy" Value="BlockLineHeight" />
+                <Setter Property="LineHeight" Value="{DynamicResource LineBody}" />
+                <Setter Property="Margin" Value="0,4,0,24" />
+            </Style>
+            <Style x:Key="TitleText" TargetType="TextBlock">
+                <Setter Property="Effect" Value="{DynamicResource TextGlowEffect}" />
+                <Setter Property="FontFamily" Value="{DynamicResource UiFontDisplay}" />
+                <Setter Property="FontSize" Value="{DynamicResource FontTitle}" />
+                <Setter Property="FontWeight" Value="SemiBold" />
+                <Setter Property="TextWrapping" Value="Wrap" />
+                <Setter Property="LineStackingStrategy" Value="BlockLineHeight" />
+                <Setter Property="LineHeight" Value="{DynamicResource LineTitle}" />
+            </Style>
+            <Style x:Key="SectionTitle" TargetType="TextBlock">
+                <Setter Property="FontSize" Value="{DynamicResource FontSubtitle}" />
+                <Setter Property="FontWeight" Value="SemiBold" />
+                <Setter Property="TextWrapping" Value="Wrap" />
+                <Setter Property="LineStackingStrategy" Value="BlockLineHeight" />
+                <Setter Property="LineHeight" Value="{DynamicResource LineSubtitle}" />
+            </Style>
+            <Style x:Key="BodyText" TargetType="TextBlock">
+                <Setter Property="FontSize" Value="{DynamicResource FontBody}" />
+                <Setter Property="TextWrapping" Value="Wrap" />
+                <Setter Property="LineStackingStrategy" Value="BlockLineHeight" />
+                <Setter Property="LineHeight" Value="{DynamicResource LineBody}" />
+            </Style>
+            <Style x:Key="BodyStrong" TargetType="TextBlock" BasedOn="{StaticResource BodyText}">
+                <Setter Property="FontWeight" Value="SemiBold" />
+            </Style>
+            <Style x:Key="BodySecondary" TargetType="TextBlock" BasedOn="{StaticResource BodyText}">
+                <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
+            </Style>
+            <Style x:Key="Caption" TargetType="TextBlock">
+                <Setter Property="FontSize" Value="{DynamicResource FontCaption}" />
+                <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
+                <Setter Property="TextWrapping" Value="Wrap" />
+                <Setter Property="LineStackingStrategy" Value="BlockLineHeight" />
+                <Setter Property="LineHeight" Value="{DynamicResource LineCaption}" />
+            </Style>
+            <!-- Live numbers: tabular figures so digits don't jitter as values change -->
+            <Style x:Key="MetricValue" TargetType="TextBlock">
+                <Setter Property="FontFamily" Value="{DynamicResource UiFontDisplay}" />
+                <Setter Property="FontSize" Value="{DynamicResource FontDisplay}" />
+                <Setter Property="FontWeight" Value="SemiBold" />
+                <Setter Property="Typography.NumeralAlignment" Value="Tabular" />
+            </Style>
+            <Style x:Key="Glyph" TargetType="TextBlock">
+                <Setter Property="FontFamily" Value="{StaticResource IconFont}" />
+                <Setter Property="FontSize" Value="{StaticResource IconBody}" />
+                <Setter Property="VerticalAlignment" Value="Center" />
+            </Style>
+
+            <!-- ═════════════ Surfaces ═════════════ -->
+
+            <!-- Glass edge: a white highlight along the top that fades out, so cards read as frosted panes over Mica.
+                 White-with-alpha works in light and dark; no drop shadow (depth comes from the lighter translucent surface). -->
+            <LinearGradientBrush x:Key="GlassEdge" StartPoint="0,0" EndPoint="0,1">
+                <GradientStop Color="#99FFFFFF" Offset="0" />
+                <GradientStop Color="#26FFFFFF" Offset="0.35" />
+                <GradientStop Color="#12808080" Offset="1" />
+            </LinearGradientBrush>
+
+            <Style x:Key="Card" TargetType="Border">
+                <Setter Property="Background" Value="{DynamicResource CardFill}" />
+                <Setter Property="BorderBrush" Value="{DynamicResource CardStroke}" />
+                <Setter Property="Effect" Value="{DynamicResource CardGlowEffect}" />
+                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="CornerRadius" Value="{DynamicResource RadiusCard}" />
+                <Setter Property="Padding" Value="{DynamicResource CardPadding}" />
+            </Style>
+            <Style x:Key="Inset" TargetType="Border">
+                <Setter Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
+                <Setter Property="CornerRadius" Value="{DynamicResource RadiusSmall}" />
+                <Setter Property="Padding" Value="12,8" />
+            </Style>
+            <Style x:Key="Chip" TargetType="Border">
+                <Setter Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
+                <Setter Property="BorderBrush" Value="{DynamicResource CardStrokeColorDefaultBrush}" />
+                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="CornerRadius" Value="{DynamicResource RadiusSmall}" />
+                <Setter Property="Padding" Value="8,4" />
+                <Setter Property="Margin" Value="0,0,8,8" />
+            </Style>
+            <!-- Status pill: tinted background + colored dot, text stays theme-colored for contrast. -->
+            <Style x:Key="Pill" TargetType="Border">
+                <Setter Property="CornerRadius" Value="{DynamicResource RadiusPill}" />
+                <Setter Property="Padding" Value="8,4,12,4" />
+                <Setter Property="Background" Value="{StaticResource SevNeutralTint}" />
+                <Setter Property="VerticalAlignment" Value="Center" />
+            </Style>
+
+            <!-- Skeleton placeholder: gently pulsing block shown while data loads. -->
+            <Style x:Key="Skeleton" TargetType="Border">
+                <Setter Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
+                <Setter Property="CornerRadius" Value="{DynamicResource RadiusSmall}" />
+                <!-- Pulse ONLY while visible: a hidden-but-running animation keeps WPF rendering at 60 fps forever. -->
+                <Style.Triggers>
+                    <Trigger Property="IsVisible" Value="True">
+                        <Trigger.EnterActions>
+                            <BeginStoryboard Name="SkeletonPulse">
+                                <Storyboard RepeatBehavior="Forever" AutoReverse="True" Timeline.DesiredFrameRate="24">
+                                    <DoubleAnimation Storyboard.TargetProperty="Opacity" From="1" To="0.45" Duration="0:0:0.9" />
+                                </Storyboard>
+                            </BeginStoryboard>
+                        </Trigger.EnterActions>
+                        <Trigger.ExitActions>
+                            <StopStoryboard BeginStoryboardName="SkeletonPulse" />
+                        </Trigger.ExitActions>
+                    </Trigger>
+                </Style.Triggers>
+            </Style>
+
+            <DataTemplate x:Key="SkeletonCards">
+                <StackPanel>
+                    <Border Style="{StaticResource Card}" Margin="{DynamicResource CardGap}">
+                        <StackPanel>
+                            <Border Style="{StaticResource Skeleton}" Width="160" Height="16" HorizontalAlignment="Left" />
+                            <Border Style="{StaticResource Skeleton}" Height="12" Margin="0,16,120,0" />
+                            <Border Style="{StaticResource Skeleton}" Height="12" Margin="0,12,200,0" />
+                            <Border Style="{StaticResource Skeleton}" Height="12" Margin="0,12,80,0" />
+                        </StackPanel>
+                    </Border>
+                    <Border Style="{StaticResource Card}" Margin="{DynamicResource CardGap}">
+                        <StackPanel>
+                            <Border Style="{StaticResource Skeleton}" Width="120" Height="16" HorizontalAlignment="Left" />
+                            <Border Style="{StaticResource Skeleton}" Height="12" Margin="0,16,160,0" />
+                            <Border Style="{StaticResource Skeleton}" Height="12" Margin="0,12,240,0" />
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </DataTemplate>
+
+            <!-- ═════════════ Buttons ═════════════ -->
+
+            <!-- Shared focus ring for keyboard users (custom templates don't get Fluent's). -->
+            <Style x:Key="FocusRing">
+                <Setter Property="Control.Template">
+                    <Setter.Value>
+                        <ControlTemplate>
+                            <Border Margin="-4" BorderThickness="2" CornerRadius="8"
+                                    BorderBrush="{DynamicResource TextFillColorPrimaryBrush}" SnapsToDevicePixels="True" />
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <!-- Primary / secondary buttons keep Fluent's own templates (all states built in):
+                 primary   = Style="{StaticResource PrimaryButton}" Padding="16,8" MinWidth="96"
+                 secondary = default Button              Padding="16,8" MinWidth="96"
+                 (Set inline so Fluent's implicit style isn't replaced; 16,8 padding ≈ 2:1 proportions.) -->
+
+            <!-- Primary: accent fill, optional glow. States: default / hover / pressed / focus / disabled. -->
+            <Style x:Key="PrimaryButton" TargetType="Button">
+                <Setter Property="Background" Value="{DynamicResource AccentFillColorDefaultBrush}" />
+                <Setter Property="Foreground" Value="{DynamicResource AccentOn}" />
+                <Setter Property="Padding" Value="16,8" />
+                <Setter Property="Cursor" Value="Hand" />
+                <Setter Property="HorizontalContentAlignment" Value="Center" />
+                <Setter Property="VerticalContentAlignment" Value="Center" />
+                <Setter Property="FocusVisualStyle" Value="{StaticResource FocusRing}" />
+                <Setter Property="Effect" Value="{DynamicResource AccentGlowEffect}" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="Surface" Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}"
+                                    CornerRadius="{DynamicResource RadiusSmall}">
+                                <ContentPresenter TextElement.Foreground="{TemplateBinding Foreground}"
+                                                  HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                  VerticalAlignment="{TemplateBinding VerticalContentAlignment}" />
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="Surface" Property="Background" Value="{DynamicResource AccentHover}" />
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="True">
+                                    <Setter TargetName="Surface" Property="Background" Value="{DynamicResource AccentPressed}" />
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter TargetName="Surface" Property="Opacity" Value="0.4" />
+                                    <Setter Property="Effect" Value="{x:Null}" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <!-- Ghost: no fill until hovered. Used for links and low-emphasis actions. -->
+            <Style x:Key="GhostButton" TargetType="ButtonBase">
+                <Setter Property="Foreground" Value="{DynamicResource AccentText}" />
+                <Setter Property="Background" Value="Transparent" />
+                <Setter Property="Padding" Value="12,8" />
+                <Setter Property="Cursor" Value="Hand" />
+                <Setter Property="HorizontalAlignment" Value="Left" />
+                <Setter Property="FocusVisualStyle" Value="{StaticResource FocusRing}" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="ButtonBase">
+                            <Border x:Name="Surface" Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}"
+                                    CornerRadius="{DynamicResource RadiusSmall}">
+                                <ContentPresenter TextElement.Foreground="{TemplateBinding Foreground}" VerticalAlignment="Center" />
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="Surface" Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="True">
+                                    <Setter TargetName="Surface" Property="Background" Value="{DynamicResource SubtleFillColorTertiaryBrush}" />
+                                    <Setter TargetName="Surface" Property="Opacity" Value="0.8" />
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter TargetName="Surface" Property="Opacity" Value="0.4" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <!-- Toggle switch (WPF has none built in): 44×24 track, 16 px knob, all 4-pt values.
+                 States: off / on (accent) / hover (knob grows) / pressed / focus ring / disabled. -->
+            <Style x:Key="Switch" TargetType="ToggleButton">
+                <Setter Property="Cursor" Value="Hand" />
+                <Setter Property="VerticalAlignment" Value="Center" />
+                <Setter Property="FocusVisualStyle" Value="{StaticResource FocusRing}" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="ToggleButton">
+                            <Grid Width="44" Height="24" Background="Transparent">
+                                <Border x:Name="Track" CornerRadius="{DynamicResource RadiusPill}" BorderThickness="1"
+                                        BorderBrush="{DynamicResource TextFillColorSecondaryBrush}" Background="Transparent" />
+                                <Ellipse x:Name="Knob" Width="12" Height="12" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="4,0"
+                                         Fill="{DynamicResource TextFillColorSecondaryBrush}" />
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="Knob" Property="Width" Value="16" />
+                                    <Setter TargetName="Knob" Property="Height" Value="16" />
+                                </Trigger>
+                                <Trigger Property="IsChecked" Value="True">
+                                    <Setter TargetName="Track" Property="Background" Value="{DynamicResource AccentFillColorDefaultBrush}" />
+                                    <Setter TargetName="Track" Property="BorderBrush" Value="{DynamicResource AccentFillColorDefaultBrush}" />
+                                    <Setter TargetName="Knob" Property="HorizontalAlignment" Value="Right" />
+                                    <Setter TargetName="Knob" Property="Fill" Value="White" />
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="True">
+                                    <Setter TargetName="Knob" Property="Width" Value="20" />
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter TargetName="Track" Property="Opacity" Value="0.4" />
+                                    <Setter TargetName="Knob" Property="Opacity" Value="0.4" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <!-- Label + description on the left, switch on the right. Used for radios, devices, startup apps, battery. -->
+            <DataTemplate x:Key="SwitchRowTemplate" DataType="{x:Type vm:SwitchItemViewModel}">
+                <Border BorderThickness="0,1,0,0" BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" Padding="0,12">
+                    <DockPanel>
+                        <ToggleButton DockPanel.Dock="Right" Style="{StaticResource Switch}" Margin="16,0,0,0"
+                                      IsChecked="{Binding IsOn, Mode=TwoWay}" AutomationProperties.Name="{Binding Name}" />
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="{Binding Name}" Style="{StaticResource BodyStrong}" />
+                            <TextBlock Text="{Binding Detail}" Style="{StaticResource Caption}" Margin="0,4,0,0"
+                                       Visibility="{Binding Detail, Converter={StaticResource Vis}}" />
+                        </StackPanel>
+                    </DockPanel>
+                </Border>
+            </DataTemplate>
+
+            <!-- Whole-card click target (Overview component cards). Hover = accent stroke, press = dim, focus = ring. -->
+            <Style x:Key="CardButton" TargetType="Button">
+                <!-- Custom template = no Fluent implicit style, so set the theme text color explicitly (fixes black text in dark mode). -->
+                <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+                <Setter Property="Cursor" Value="Hand" />
+                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                <Setter Property="FocusVisualStyle" Value="{StaticResource FocusRing}" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="Surface" Style="{StaticResource Card}" MinHeight="120">
+                                <ContentPresenter TextElement.Foreground="{TemplateBinding Foreground}" />
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="Surface" Property="BorderBrush" Value="{DynamicResource AccentFillColorDefaultBrush}" />
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="True">
+                                    <Setter TargetName="Surface" Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
+                                    <Setter TargetName="Surface" Property="Opacity" Value="0.85" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <!-- ═════════════ Live metric tile ═════════════ -->
+            <DataTemplate x:Key="TileTemplate" DataType="{x:Type vm:LiveTileViewModel}">
+                <Border Style="{StaticResource Card}" Height="128" Margin="0,0,12,12" Padding="16,12">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+                        <TextBlock Text="{Binding Label}" Style="{StaticResource Caption}" TextTrimming="CharacterEllipsis" />
+                        <WrapPanel Grid.Row="1" Margin="0,4,0,0">
+                            <TextBlock Text="{Binding ValueText}" Style="{StaticResource MetricValue}" Margin="0,0,8,0" />
+                            <TextBlock Text="{Binding DetailText}" Style="{StaticResource Caption}" VerticalAlignment="Bottom" Margin="0,0,0,4"
+                                       Visibility="{Binding DetailText, Converter={StaticResource Vis}}" />
+                        </WrapPanel>
+                        <c:SparkChart Grid.Row="2" Margin="0,8,0,0"
+                                      Data="{Binding Data}"
+                                      Minimum="{Binding Minimum}"
+                                      Maximum="{Binding Maximum}"
+                                      Capacity="{Binding ChartCapacity}"
+                                      SpanSeconds="{Binding SpanSeconds}"
+                                      ValueFormatter="{Binding Formatter}"
+                                      Stroke="{DynamicResource AccentFillColorDefaultBrush}" />
+                    </Grid>
+                </Border>
+            </DataTemplate>
+
+            <!-- ═════════════ Spec card (label/value rows + optional chips) ═════════════ -->
+            <DataTemplate x:Key="SectionTemplate" DataType="{x:Type hw:SpecSection}">
+                <Border Style="{StaticResource Card}" Margin="{DynamicResource CardGap}">
+                    <StackPanel>
+                        <TextBlock Text="{Binding Title}" Style="{StaticResource SectionTitle}" />
+                        <TextBlock Text="{Binding Subtitle}" Style="{StaticResource Caption}" Margin="0,4,0,0"
+                                   Visibility="{Binding Subtitle, Converter={StaticResource Vis}}" />
+                        <ItemsControl ItemsSource="{Binding Rows}" Margin="0,12,0,0">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid Margin="0,4">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="240" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="{Binding Label}" Style="{StaticResource BodySecondary}" Margin="0,0,16,0" />
+                                        <TextBlock Grid.Column="1" Text="{Binding Value}" Style="{StaticResource BodyStrong}" />
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <ItemsControl ItemsSource="{Binding Tags}" Margin="0,8,0,-8">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Style="{StaticResource Chip}">
+                                        <TextBlock Text="{Binding}" FontSize="{DynamicResource FontCaption}" FontWeight="SemiBold" />
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+            </DataTemplate>
+
+            <!-- ═════════════ Insight card ═════════════ -->
+            <DataTemplate x:Key="InsightTemplate" DataType="{x:Type hw:Insight}">
+                <Border Style="{StaticResource Card}" Margin="{DynamicResource CardGap}" Padding="0">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="4" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Border x:Name="Stripe" CornerRadius="8,0,0,8" Background="{StaticResource SevInfo}" />
+                        <TextBlock x:Name="Icon" Grid.Column="1" Style="{StaticResource Glyph}" Text="&#xE946;" FontSize="{StaticResource IconTitle}"
+                                   VerticalAlignment="Top" Margin="16,16,12,0" Foreground="{StaticResource SevInfo}" />
+                        <StackPanel Grid.Column="2" Margin="0,16,20,16">
+                            <TextBlock Text="{Binding Title}" Style="{StaticResource SectionTitle}" />
+                            <TextBlock Text="{Binding Category}" Style="{StaticResource Caption}" Margin="0,4,0,8" />
+                            <TextBlock Text="{Binding Detail}" Style="{StaticResource BodyText}" />
+                            <Border Style="{StaticResource Inset}" Margin="0,12,0,0"
+                                    Visibility="{Binding Action, Converter={StaticResource Vis}}">
+                                <DockPanel>
+                                    <TextBlock DockPanel.Dock="Left" Style="{StaticResource Glyph}" Text="&#xE72A;" FontSize="{StaticResource IconSmall}"
+                                               Margin="0,4,8,0" VerticalAlignment="Top" Foreground="{DynamicResource AccentText}" />
+                                    <TextBlock Text="{Binding Action}" Style="{StaticResource BodyStrong}" />
+                                </DockPanel>
+                            </Border>
+                            <!-- Fix buttons: CoreScope does it, opens exactly where to fix it, or walks you through it -->
+                            <ItemsControl ItemsSource="{Binding Buttons}" Margin="0,12,0,0" IsEnabled="{Binding State.IsIdle}"
+                                          Visibility="{Binding HasFixes, Converter={StaticResource Vis}}" KeyboardNavigation.TabNavigation="Continue">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate DataType="{x:Type fx:FixButton}">
+                                        <Grid Margin="0,0,8,8">
+                                            <Button Padding="16,8" MinWidth="96" Style="{StaticResource PrimaryButton}" Content="{Binding Label}"
+                                                    Command="{x:Static vm:InsightActions.RunFix}" CommandParameter="{Binding}" ToolTip="{Binding Tooltip}"
+                                                    AutomationProperties.Name="{Binding Label}" Visibility="{Binding IsPrimary, Converter={StaticResource Vis}}" />
+                                            <Button Padding="16,8" MinWidth="96" Content="{Binding Label}"
+                                                    Command="{x:Static vm:InsightActions.RunFix}" CommandParameter="{Binding}" ToolTip="{Binding Tooltip}"
+                                                    AutomationProperties.Name="{Binding Label}" Visibility="{Binding IsSecondary, Converter={StaticResource Vis}}" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <ProgressBar IsIndeterminate="True" Height="3" Margin="0,0,0,8" HorizontalAlignment="Stretch"
+                                         Visibility="{Binding State.IsBusy, Converter={StaticResource Vis}}" />
+                            <DockPanel Margin="0,0,0,8" Visibility="{Binding State.HasResult, Converter={StaticResource Vis}}">
+                                <TextBlock x:Name="ResultGlyph" DockPanel.Dock="Left" Style="{StaticResource Glyph}" Text="&#xE930;" FontSize="{StaticResource IconSmall}"
+                                           Margin="0,4,8,0" VerticalAlignment="Top" Foreground="{StaticResource SevGood}" />
+                                <TextBlock x:Name="ResultText" Text="{Binding State.Result}" Style="{StaticResource BodyStrong}" />
+                            </DockPanel>
+
+                            <!-- "Why?" — the evidence behind the finding (ghost toggle) -->
+                            <ToggleButton x:Name="WhyToggle" Style="{StaticResource GhostButton}" Margin="-12,4,0,0"
+                                          Visibility="{Binding HasEvidence, Converter={StaticResource Vis}}"
+                                          AutomationProperties.Name="Show the evidence behind this finding">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock x:Name="Chevron" Style="{StaticResource Glyph}" Text="&#xE76C;" FontSize="{StaticResource IconSmall}" Margin="0,0,8,0" />
+                                    <TextBlock x:Name="WhyLabel" Text="Why?" FontWeight="SemiBold" />
+                                </StackPanel>
+                            </ToggleButton>
+                            <Border x:Name="WhyPanel" Visibility="Collapsed" Margin="0,4,0,0" Padding="12" CornerRadius="{DynamicResource RadiusSmall}"
+                                    BorderThickness="1" BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="80" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                    </Grid.RowDefinitions>
+                                    <TextBlock Grid.Row="0" Text="Measured" Style="{StaticResource Caption}" Margin="0,2,0,8" />
+                                    <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding Measured}" Style="{StaticResource BodyStrong}" Margin="0,0,0,8" />
+                                    <TextBlock Grid.Row="1" Text="Rule" Style="{StaticResource Caption}" Margin="0,2,0,8" />
+                                    <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding Rule}" Style="{StaticResource BodyText}" Margin="0,0,0,8" />
+                                    <TextBlock Grid.Row="2" Text="Source" Style="{StaticResource Caption}" Margin="0,2,0,0" />
+                                    <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding Source}" Style="{StaticResource Caption}" Margin="0,2,0,0" />
+                                </Grid>
+                            </Border>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+                <DataTemplate.Triggers>
+                    <DataTrigger Binding="{Binding State.ResultOk}" Value="False">
+                        <Setter TargetName="ResultGlyph" Property="Text" Value="&#xE7BA;" />
+                        <Setter TargetName="ResultGlyph" Property="Foreground" Value="{StaticResource SevWarning}" />
+                    </DataTrigger>
+                    <Trigger SourceName="WhyToggle" Property="ToggleButton.IsChecked" Value="True">
+                        <Setter TargetName="WhyPanel" Property="Visibility" Value="Visible" />
+                        <Setter TargetName="Chevron" Property="Text" Value="&#xE70D;" />
+                        <Setter TargetName="WhyLabel" Property="Text" Value="Hide details" />
+                    </Trigger>
+                    <DataTrigger Binding="{Binding SeverityName}" Value="Critical">
+                        <Setter TargetName="Stripe" Property="Background" Value="{StaticResource SevCritical}" />
+                        <Setter TargetName="Icon" Property="Foreground" Value="{StaticResource SevCritical}" />
+                        <Setter TargetName="Icon" Property="Text" Value="&#xEA39;" />
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding SeverityName}" Value="Warning">
+                        <Setter TargetName="Stripe" Property="Background" Value="{StaticResource SevWarning}" />
+                        <Setter TargetName="Icon" Property="Foreground" Value="{StaticResource SevWarning}" />
+                        <Setter TargetName="Icon" Property="Text" Value="&#xE7BA;" />
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding SeverityName}" Value="Good">
+                        <Setter TargetName="Stripe" Property="Background" Value="{StaticResource SevGood}" />
+                        <Setter TargetName="Icon" Property="Foreground" Value="{StaticResource SevGood}" />
+                        <Setter TargetName="Icon" Property="Text" Value="&#xE930;" />
+                    </DataTrigger>
+                </DataTemplate.Triggers>
+            </DataTemplate>
+
+            <!-- ═════════════ Page view-model → view mapping ═════════════ -->
+            <DataTemplate DataType="{x:Type vm:OverviewViewModel}">
+                <views:OverviewView />
+            </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:InsightsViewModel}">
+                <views:InsightsView />
+            </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:UpgradeViewModel}">
+                <views:UpgradeView />
+            </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:BenchmarkViewModel}">
+                <views:BenchmarkView />
+            </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:AppearanceViewModel}">
+                <views:AppearanceView />
+            </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:SettingsViewModel}">
+                <views:SettingsView />
+            </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:ControlCenterViewModel}">
+                <views:ControlCenterView />
+            </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:DevicesViewModel}">
+                <views:DevicesView />
+            </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:NetworkViewModel}">
+                <views:NetworkView />
+            </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:SpecPageViewModel}">
+                <views:SpecPageView />
+            </DataTemplate>
+            <DataTemplate DataType="{x:Type vm:SensorsViewModel}">
+                <views:SensorsView />
+            </DataTemplate>
+
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>

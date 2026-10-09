@@ -43,6 +43,7 @@ public sealed class AppSettings
     public string SkinId { get; set; } = "fluent";             // a ThemeCatalog skin id, or "custom" once tweaked
     public string Layout { get; set; } = "Sidebar";            // Sidebar | Rail | TopBar
     public bool CompactSpacing { get; set; }
+    public bool KeepLayoutOnAllPages { get; set; }             // a page's own look never moves the navigation
     public string? AccentHex { get; set; }                     // null = Windows accent colour
     public string Backdrop { get; set; } = "Mica";             // Mica | Acrylic | None
     public int Transparency { get; set; } = 70;                // 0 solid .. 100 see-through

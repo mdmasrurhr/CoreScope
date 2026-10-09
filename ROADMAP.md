@@ -12,14 +12,14 @@ Progress is tracked in the [1.2.0 milestone](../../milestone/1).
 - [ ] winget manifest updated automatically for each release (`Rakin.CoreScope`). The workflow step is written; it starts working once the 1.0.0 package is approved and a `WINGET_TOKEN` secret is added.
 - [ ] Code signing, so the installer shows a verified publisher (decision: SignPath Foundation, Azure Trusted Signing, or stay unsigned).
 - [x] Issue templates, `SECURITY.md`, `CONTRIBUTING.md`.
-- [ ] README screenshots.
+- [x] README screenshots.
 
 ### 2. Insights that keep working after you close the page
 - [ ] Tray notification when a *new* warning or critical finding appears (once per finding; respects dismiss and snooze).
 - [ ] Health history: store the score and key readings locally and show a trend.
 - [ ] Fix log with Undo, and an automatic restore point before risky fixes.
 - [ ] More checks, each with a fix path: drive SMART detail, BitLocker recovery-key backup, driver age per device, stale Defender scan, battery drain, resource-hungry background apps.
-- [ ] A "what this will do" preview line on every fix that changes something.
+- [x] A "what this will do" preview line on every fix that changes something (1.1.1).
 
 ### 3. Prove it on other PCs
 - [ ] Windows 10 pass (Mica needs build 22621; check the fallback backdrop and every page).
@@ -28,8 +28,8 @@ Progress is tracked in the [1.2.0 milestone](../../milestone/1).
 - [ ] Accessibility audit: keyboard-only use, screen-reader names, contrast of every skin.
 
 ### 4. Polish and known limits
-- [ ] Select text across several blocks and keep bold runs in the selection overlay.
-- [ ] Smooth the layout change when a page has its own look, or let layout stay fixed.
+- [x] Select text across several blocks and keep bold runs in the selection overlay (1.1.1).
+- [x] Smooth the layout change when a page has its own look, or let layout stay fixed (1.1.1).
 - [ ] Theme sharing: preview thumbnails and a small curated gallery in the repo.
 - [ ] Performance budget: measure start-up time, idle CPU and memory, and the GPU cost of glow on cards.
 

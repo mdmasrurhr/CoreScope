@@ -31,7 +31,8 @@ internal sealed class FakeHost : IFixHost
     public List<Guide> Guides { get; } = new();
     public int Unlocks { get; private set; }
 
-    public bool Confirm(string title, string message, string yes) { Questions.Add(message); return Agree; }
+    public List<string?> Previews { get; } = new();
+    public bool Confirm(string title, string message, string yes, string? preview = null) { Questions.Add(message); Previews.Add(preview); return Agree; }
     public void ShowGuide(Guide guide) => Guides.Add(guide);
     public bool Navigate(string page) { Pages.Add(page); return page != "Nowhere"; }
     public void UnlockFullAccess() => Unlocks++;
@@ -74,6 +75,52 @@ public class FixRunnerTests
         Assert.True(result.Ok);
         Assert.Equal(new[] { "Sure?" }, host.Questions);
         Assert.Equal(new[] { "netsh advfirewall set allprofiles state on" }, tools.Calls);
+    }
+
+    [Fact]
+    public async Task Confirmation_ShowsWhatTheFixWillDo()
+    {
+        var (_, host) = Arrange();
+        await FixRunner.RunAsync(FixButtons.Do(FixIds.EnableFirewall, "Turn on", "Sure?"), host);
+        Assert.Contains("netsh advfirewall set allprofiles state on", host.Previews.Single());
+    }
+
+    [Fact]
+    public async Task EveryCommandFix_AsksFirst_EvenWithoutItsOwnQuestion()
+    {
+        var (tools, host) = Arrange();
+        host.Agree = false;
+        var result = await FixRunner.RunAsync(FixButtons.Do(FixIds.SyncClock, "Sync clock"), host);   // no confirm text given
+        Assert.False(result.Ok);
+        Assert.Empty(tools.Calls);
+        Assert.Single(host.Questions);
+        Assert.Contains("w32tm", host.Previews.Single());
+    }
+
+    [Fact]
+    public async Task NetworkSettingFix_ConfirmsWithPreviewBeforeChangingAnything()
+    {
+        var (tools, host) = Arrange();
+        host.Agree = false;
+        var result = await FixRunner.RunAsync(new FixAction(CoreScope.Core.Network.NetworkFixes.DisableRsc, "Turn off RSC", FixKind.Command), host);
+        Assert.False(result.Ok);
+        Assert.Empty(tools.Calls);
+        Assert.Contains("rsc=disabled", host.Previews.Single());
+    }
+
+    [Fact]
+    public void EveryCommandFix_HasAPreviewAndAQuestion()
+    {
+        var ids = typeof(FixIds).GetFields().Where(f => f.IsLiteral).Select(f => (string)f.GetRawConstantValue()!)
+            .Where(id => id != FixIds.Unlock);
+        foreach (var id in ids)
+        {
+            var action = new FixAction(id, "x", FixKind.Command, "App", "Q?");
+            Assert.False(string.IsNullOrWhiteSpace(FixPreviews.For(action)), "no preview for " + id);
+        }
+        foreach (var id in new[] { CoreScope.Core.Network.NetworkFixes.DisableRsc, CoreScope.Core.Network.NetworkFixes.EnableRsc, CoreScope.Core.Network.NetworkFixes.AutoTuningNormal, CoreScope.Core.Network.NetworkFixes.FlushDns })
+            Assert.NotNull(FixPreviews.For(new FixAction(id, "x", FixKind.Command)));
+        Assert.Null(FixPreviews.For(FixButtons.Page("Open", "Control")));
     }
 
     [Fact]

@@ -14,6 +14,12 @@ A winget package (`winget install Rakin.CoreScope`) is waiting for review by the
 > **"Windows protected your PC"?** CoreScope isn't code-signed yet (signing certificates cost money or need a company).
 > Click **More info → Run anyway**. It's shown only once.
 
+## Screenshots
+
+| Insights, with fixes | Appearance | Upgrade guide |
+| --- | --- | --- |
+| ![Insights](docs/images/insights.png) | ![Appearance](docs/images/appearance.png) | ![Upgrade guide](docs/images/upgrade.png) |
+
 ## What it does
 
 - **Specs:** processor (codename, cores, caches), memory (part numbers, speed, **CAS latency and timings**,

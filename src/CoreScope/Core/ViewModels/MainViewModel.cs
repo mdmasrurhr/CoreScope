@@ -242,7 +242,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
             _services = services;
         }
 
-        public bool Confirm(string title, string message, string yes) => _services.Confirm(title, message, yes);
+        public bool Confirm(string title, string message, string yes, string? preview = null) => _services.Confirm(title, message, yes, preview);
         public void ShowGuide(Guide guide) => _services.ShowGuide(guide, _main._fixes.RunAction);
         public bool Navigate(string page)
         {

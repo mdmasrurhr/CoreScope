@@ -65,7 +65,8 @@ public sealed record FixResult(bool Ok, string Message)
 public interface IFixHost
 {
     /// <summary>Asks the user to confirm; returns true to go ahead.</summary>
-    bool Confirm(string title, string message, string yes);
+    /// <param name="preview">The exact change in plain words (and the command), shown under the question.</param>
+    bool Confirm(string title, string message, string yes, string? preview = null);
     void ShowGuide(Guide guide);
     /// <summary>Selects a CoreScope page by title; false when there is no such page.</summary>
     bool Navigate(string page);

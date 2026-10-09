@@ -23,6 +23,7 @@ namespace CoreScope.Platform;
 public static class TextInteraction
 {
     private static readonly ContextMenu BlockMenu = BuildBlockMenu();
+    private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<TextBoxBase, RangeSelection> Ranges = new();
     private static bool _registered;
 
     public static void Register()
@@ -56,10 +57,9 @@ public static class TextInteraction
 
     /// <summary>
     /// Starts selecting the text of <paramref name="block"/>. Returns the overlay text box, or null when the block is not eligible
-    /// (click target, empty, hidden, no adorner layer). When <paramref name="mouse"/> is given, the click is forwarded so a drag
-    /// that began on the text carries on selecting.
+    /// (click target, empty, hidden, no adorner layer). When <paramref name="mouse"/> is given, the press carries on as a drag selection.
     /// </summary>
-    public static TextBox? BeginSelection(TextBlock block, MouseButtonEventArgs? mouse = null)
+    public static TextBoxBase? BeginSelection(TextBlock block, MouseButtonEventArgs? mouse = null)
     {
         if (!block.IsVisible || block.ActualWidth < 1 || block.ActualHeight < 1) return null;
         if (IsClickTarget(block) || IsInsideOverlay(block)) return null;
@@ -68,26 +68,87 @@ public static class TextInteraction
         var layer = AdornerLayer.GetAdornerLayer(block);
         if (layer is null) return null;
 
-        var box = CreateBox(block, text);
+        TextBoxBase box = IsMixed(block) ? CreateRichBox(block) : CreateBox(block, text);
         var adorner = new SelectionAdorner(block, box);
+        var range = new RangeSelection(block, box);
+        Ranges.Add(box, range);
         var previousOpacity = block.Opacity;
         block.Opacity = 0; // the overlay draws the same text; hide the original so it is not drawn twice
         layer.Add(adorner);
         box.LostKeyboardFocus += (_, args) =>
         {
             if (args.NewFocus is DependencyObject target && (target == box || IsDescendant(box, target))) return; // e.g. its own context menu
+            range.Clear();
             Dismiss(layer, adorner, block, previousOpacity);
         };
-        block.Unloaded += (_, _) => Dismiss(layer, adorner, block, previousOpacity);
+        block.Unloaded += (_, _) => { range.Clear(); Dismiss(layer, adorner, block, previousOpacity); };
 
         layer.UpdateLayout();
         box.Focus();
-        if (mouse is not null)
-        {
-            var forwarded = new MouseButtonEventArgs(mouse.MouseDevice, mouse.Timestamp, MouseButton.Left) { RoutedEvent = UIElement.MouseLeftButtonDownEvent, Source = box };
-            box.RaiseEvent(forwarded);
-        }
+        if (mouse is not null) BeginDrag(box, mouse.GetPosition(box));
         return box;
+    }
+
+    /// <summary>
+    /// Carries on the press that created the overlay as a drag selection: the text under the press is where the selection starts, and
+    /// the mouse is captured so it follows the pointer until the button is released. (Forwarding the click to the text box does not
+    /// start a drag, because the box never saw the press itself.)
+    /// </summary>
+    private static void BeginDrag(TextBoxBase box, Point start)
+    {
+        var anchor = IndexAt(box, start);
+        if (anchor < 0) return;
+        Select(box, anchor, anchor);
+        box.CaptureMouse();
+
+        void Follow(object sender, MouseEventArgs e)
+        {
+            if (e.LeftButton != MouseButtonState.Pressed) { Finish(); return; }
+            if (Ranges.TryGetValue(box, out var range) && range.IsActive) return;
+            var index = IndexAt(box, e.GetPosition(box));
+            if (index >= 0) Select(box, anchor, index);
+        }
+        void Finish()
+        {
+            box.PreviewMouseMove -= Follow;
+            box.MouseLeftButtonUp -= Up;
+            box.LostMouseCapture -= Lost;
+            if (box.IsMouseCaptured) box.ReleaseMouseCapture();
+        }
+        void Up(object sender, MouseButtonEventArgs e) => Finish();
+        void Lost(object sender, MouseEventArgs e) => Finish();
+
+        box.PreviewMouseMove += Follow;
+        box.MouseLeftButtonUp += Up;
+        box.LostMouseCapture += Lost;
+    }
+
+    /// <summary>Character offset under <paramref name="point"/> (nearest character), or -1 when it cannot be worked out.</summary>
+    private static int IndexAt(TextBoxBase box, Point point)
+    {
+        switch (box)
+        {
+            case TextBox text:
+                return text.GetCharacterIndexFromPoint(point, true);
+            case RichTextBox rich:
+                var position = rich.GetPositionFromPoint(point, true);
+                return position is null ? -1 : rich.Document.ContentStart.GetOffsetToPosition(position);
+            default:
+                return -1;
+        }
+    }
+
+    private static void Select(TextBoxBase box, int from, int to)
+    {
+        var start = Math.Min(from, to);
+        var length = Math.Abs(to - from);
+        if (box is TextBox text) text.Select(start, length);
+        else if (box is RichTextBox rich)
+        {
+            var begin = rich.Document.ContentStart.GetPositionAtOffset(start);
+            var end = rich.Document.ContentStart.GetPositionAtOffset(start + length);
+            if (begin is not null && end is not null) rich.Selection.Select(begin, end);
+        }
     }
 
     private static void Dismiss(AdornerLayer layer, SelectionAdorner adorner, TextBlock block, double opacity)
@@ -143,9 +204,9 @@ public static class TextInteraction
     /// <summary>Hosts the overlay box exactly over the TextBlock it replaces.</summary>
     private sealed class SelectionAdorner : Adorner
     {
-        private readonly TextBox _box;
+        private readonly UIElement _box;
 
-        public SelectionAdorner(UIElement adorned, TextBox box) : base(adorned)
+        public SelectionAdorner(UIElement adorned, UIElement box) : base(adorned)
         {
             _box = box;
             AddVisualChild(box);
@@ -166,6 +227,206 @@ public static class TextInteraction
             _box.Arrange(new Rect(AdornedElement.RenderSize));
             return AdornedElement.RenderSize;
         }
+    }
+
+    // ───────────── Text with bold / italic / links ─────────────
+
+    /// <summary>True when part of the text is formatted differently from the rest, so a plain text box would lose it.</summary>
+    public static bool IsMixed(TextBlock block) => block.Inlines.Any(i => Differs(i, block));
+
+    private static bool Differs(Inline inline, TextBlock owner) => inline switch
+    {
+        LineBreak => false,
+        Span => true,
+        _ => inline.FontWeight != owner.FontWeight || inline.FontStyle != owner.FontStyle || inline.FontSize != owner.FontSize
+             || !Equals(inline.FontFamily, owner.FontFamily) || !Equals(inline.Foreground, owner.Foreground) || inline.TextDecorations is { Count: > 0 },
+    };
+
+    private static Inline CloneInline(Inline source)
+    {
+        Inline copy = source switch
+        {
+            LineBreak => new LineBreak(),
+            Run run => new Run(run.Text),
+            Span => new Span(),
+            _ => new Run(new TextRange(source.ContentStart, source.ContentEnd).Text),
+        };
+        if (source is Span span && copy is Span target)
+            foreach (var child in span.Inlines.ToList()) target.Inlines.Add(CloneInline(child));
+        copy.FontWeight = source.FontWeight;
+        copy.FontStyle = source.FontStyle;
+        copy.FontSize = source.FontSize;
+        copy.FontFamily = source.FontFamily;
+        copy.Foreground = source.Foreground;
+        if (source.TextDecorations is { Count: > 0 } decorations) copy.TextDecorations = decorations;
+        return copy;
+    }
+
+    /// <summary>Read-only rich text over a TextBlock whose runs are formatted differently (bold, italic, links).</summary>
+    private static RichTextBox CreateRichBox(TextBlock block)
+    {
+        var paragraph = new Paragraph { Margin = new Thickness(0) };
+        foreach (var inline in block.Inlines.ToList()) paragraph.Inlines.Add(CloneInline(inline));
+        var document = new FlowDocument(paragraph)
+        {
+            PagePadding = new Thickness(0),
+            FontFamily = block.FontFamily, FontSize = block.FontSize, FontWeight = block.FontWeight, FontStyle = block.FontStyle,
+            Foreground = block.Foreground, TextAlignment = block.TextAlignment, LineHeight = block.LineHeight, LineStackingStrategy = block.LineStackingStrategy,
+        };
+        if (block.TextWrapping == TextWrapping.NoWrap) document.PageWidth = 100000;
+        var template = new ControlTemplate(typeof(RichTextBox)) { VisualTree = new FrameworkElementFactory(typeof(Border), "PART_ContentHost") };
+        var box = new RichTextBox
+        {
+            Template = template, Document = document, IsReadOnly = true, IsReadOnlyCaretVisible = false, IsInactiveSelectionHighlightEnabled = true,
+            Padding = new Thickness(0), BorderThickness = new Thickness(0), Margin = new Thickness(0), MinHeight = 0, MinWidth = 0,
+            Background = Brushes.Transparent, FocusVisualStyle = null, Cursor = Cursors.IBeam, Effect = block.Effect, SelectionOpacity = 0.55,
+            ContextMenu = BuildBoxMenu(),
+        };
+        box.SetResourceReference(TextBoxBase.SelectionBrushProperty, "AccentFillColorSelectedTextBackgroundBrush");
+        return box;
+    }
+
+    // ───────────── Selecting across several texts ─────────────
+
+    /// <summary>
+    /// While the mouse is held down and dragged out of the text it started in, every text it passes over is highlighted too, and
+    /// Copy (Ctrl+C or the menu) copies all of them in reading order. Whole texts are selected, not partial lines.
+    /// </summary>
+    private sealed class RangeSelection
+    {
+        private readonly TextBlock _anchor;
+        private readonly TextBoxBase _box;
+        private readonly List<(TextBlock Block, AdornerLayer Layer, SelectionAdorner Adorner, double Opacity)> _shown = new();
+        private string _text = "";
+        private Window? _window;
+
+        public RangeSelection(TextBlock anchor, TextBoxBase box)
+        {
+            _anchor = anchor;
+            _box = box;
+            box.PreviewMouseMove += OnMove;
+            box.AddHandler(CommandManager.PreviewExecutedEvent, new ExecutedRoutedEventHandler(OnCommand), true);
+        }
+
+        /// <summary>True while other texts, besides the one that was pressed, are part of the selection.</summary>
+        public bool IsActive => _shown.Count > 0;
+
+        private void OnCommand(object sender, ExecutedRoutedEventArgs e)
+        {
+            if (!IsActive || e.Command != ApplicationCommands.Copy) return;
+            PutOnClipboard(_text, _anchor);
+            e.Handled = true;
+        }
+
+        private void OnMove(object sender, MouseEventArgs e)
+        {
+            if (e.LeftButton != MouseButtonState.Pressed) return;
+            var root = PageRootOf(_anchor);
+            Update(root, e.GetPosition(root), out _);
+        }
+
+        /// <summary>Extends the selection from the anchor text to the text nearest <paramref name="point"/> (page coordinates).</summary>
+        /// <returns>True when several texts are now selected; <paramref name="text"/> is what Copy will put on the clipboard.</returns>
+        public bool Update(FrameworkElement root, Point point, out string text)
+        {
+            text = "";
+            Clear();
+            var anchorRect = new Rect(_anchor.TranslatePoint(new Point(0, 0), root), _anchor.RenderSize);
+            if (anchorRect.Contains(point)) return false;
+
+            var candidates = Eligible(root, _anchor);
+            var end = candidates.OrderBy(c => Distance(c.Rect, point)).FirstOrDefault();
+            if (end.Block is null || ReferenceEquals(end.Block, _anchor)) return false;
+            var from = candidates.FindIndex(c => ReferenceEquals(c.Block, _anchor));
+            var to = candidates.FindIndex(c => ReferenceEquals(c.Block, end.Block));
+            if (from < 0 || to < 0) return false;
+            var range = candidates.Skip(Math.Min(from, to)).Take(Math.Abs(to - from) + 1).ToList();
+
+            foreach (var (block, rect) in range)
+            {
+                if (ReferenceEquals(block, _anchor)) continue;
+                if (AdornerLayer.GetAdornerLayer(block) is not { } layer) continue;
+                var box = CreateBox(block, TextOf(block));
+                box.Focusable = false;
+                box.SelectAll();
+                var adorner = new SelectionAdorner(block, box);
+                var opacity = block.Opacity;
+                block.Opacity = 0;
+                layer.Add(adorner);
+                _shown.Add((block, layer, adorner, opacity));
+            }
+            _box.SelectAll();
+            RefreshSelection(_box);
+            _text = Join(range.Select(c => (c.Rect.Y, c.Rect.X, TextOf(c.Block))));
+            if (_window is null && Window.GetWindow(_anchor) is { } window)
+            {
+                _window = window;
+                window.PreviewMouseDown += OnWindowMouseDown;
+            }
+            text = _text;
+            return true;
+        }
+
+        private void OnWindowMouseDown(object sender, MouseButtonEventArgs e)
+        {
+            if (e.OriginalSource is DependencyObject source && IsDescendant(_box, source)) return;
+            Clear();
+            if (_box.IsKeyboardFocusWithin) Keyboard.ClearFocus();   // the overlay then goes away through its focus handler
+        }
+
+        public void Clear()
+        {
+            foreach (var (block, layer, adorner, opacity) in _shown)
+            {
+                layer.Remove(adorner);
+                block.Opacity = opacity;
+            }
+            _shown.Clear();
+            _text = "";
+            if (_window is not null) { _window.PreviewMouseDown -= OnWindowMouseDown; _window = null; }
+        }
+
+        /// <summary>A text box that is being dragged over does not always repaint a selection set from code; nudge it.</summary>
+        private static void RefreshSelection(TextBoxBase box)
+        {
+            box.InvalidateVisual();
+            box.UpdateLayout();
+            box.Dispatcher.BeginInvoke(() => box.SelectAll(), DispatcherPriority.Render);
+        }
+
+        private static double Distance(Rect rect, Point p)
+        {
+            var dx = Math.Max(Math.Max(rect.Left - p.X, 0), p.X - rect.Right);
+            var dy = Math.Max(Math.Max(rect.Top - p.Y, 0), p.Y - rect.Bottom);
+            return Math.Sqrt(dx * dx + dy * dy);
+        }
+    }
+
+    /// <summary>Drag-selection across texts, driven directly (the mouse handler calls the same code). Used by tests.</summary>
+    public static bool TrySelectRange(TextBlock anchor, TextBoxBase overlay, FrameworkElement root, Point point, out string text)
+    {
+        text = "";
+        return Ranges.TryGetValue(overlay, out var range) && range.Update(root, point, out text);
+    }
+
+    /// <summary>The texts on a page that the mouse may select, in reading order (the anchor is included even while hidden).</summary>
+    private static List<(TextBlock Block, Rect Rect)> Eligible(FrameworkElement root, TextBlock anchor)
+    {
+        var found = new List<(TextBlock Block, Rect Rect)>();
+        void Visit(DependencyObject node)
+        {
+            if (node is UIElement { IsVisible: false }) return;
+            if (node is TextBlock block)
+            {
+                if (block.ActualWidth >= 1 && block.ActualHeight >= 1 && (ReferenceEquals(block, anchor) || block.Opacity > 0)
+                    && !IsClickTarget(block) && !string.IsNullOrWhiteSpace(TextOf(block)))
+                    found.Add((block, new Rect(block.TranslatePoint(new Point(0, 0), root), block.RenderSize)));
+                return;
+            }
+            for (var i = 0; i < VisualTreeHelper.GetChildrenCount(node); i++) Visit(VisualTreeHelper.GetChild(node, i));
+        }
+        Visit(root);
+        return found.OrderBy(f => Math.Round(f.Rect.Y / 8)).ThenBy(f => f.Rect.X).ToList();
     }
 
     // ───────────── Rules ─────────────
@@ -194,6 +455,11 @@ public static class TextInteraction
     {
         var pieces = new List<(double Y, double X, string Text)>();
         Collect(root, root, pieces);
+        return Join(pieces);
+    }
+
+    private static string Join(IEnumerable<(double Y, double X, string Text)> pieces)
+    {
         var builder = new StringBuilder();
         double? rowY = null;
         foreach (var piece in pieces.OrderBy(p => Math.Round(p.Y / 8)).ThenBy(p => p.X))

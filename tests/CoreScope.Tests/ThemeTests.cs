@@ -234,6 +234,20 @@ public class ThemeLooksTests
     }
 
     [Fact]
+    public void Resolve_KeepsTheBaseLayoutWhenAsked()
+    {
+        var s = new AppSettings { KeepLayoutOnAllPages = true, Layout = "TopBar" };
+        s.PageLooks["Network"] = ThemeLooks.ForSkin(ThemeCatalog.Find("midnight")!);   // Midnight is a Rail skin
+
+        var effective = ThemeLooks.Resolve(s, "Network");
+        Assert.Equal("TopBar", effective.Layout);          // navigation stays put
+        Assert.Equal("Dark", effective.ThemeMode);         // but the rest of the look still applies
+
+        s.KeepLayoutOnAllPages = false;
+        Assert.Equal("Rail", ThemeLooks.Resolve(s, "Network").Layout);
+    }
+
+    [Fact]
     public void Resolve_AppliesASavedTheme()
     {
         var s = new AppSettings { Glow = 77, Layout = "TopBar" };

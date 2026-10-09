@@ -46,7 +46,25 @@ internal static class FixDialogs
 
     // ───────────── Confirmation ─────────────
 
-    public static bool Confirm(string title, string message, string yes)
+    /// <summary>The "what this will do" box: a heading, the change in words, and the command in a monospaced line.</summary>
+    private static Border PreviewBox(string preview)
+    {
+        var panel = new StackPanel();
+        panel.Children.Add(new TextBlock { Text = "What this will do", FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 0, 0, 4) });
+        foreach (var line in preview.Split('\n'))
+        {
+            var isCommand = line.StartsWith("Command:", StringComparison.Ordinal) || line.StartsWith("Change:", StringComparison.Ordinal);
+            var block = Text(line, isCommand ? "Caption" : "BodyText", new Thickness(0, 0, 0, 2));
+            if (isCommand) block.FontFamily = new FontFamily("Consolas");
+            panel.Children.Add(block);
+        }
+        var box = new Border { Padding = new Thickness(12, 10, 12, 10), Margin = new Thickness(0, 14, 0, 0), CornerRadius = new CornerRadius(8), BorderThickness = new Thickness(1), Child = panel };
+        box.SetResourceReference(Border.BackgroundProperty, "AccentWash");
+        box.SetResourceReference(Border.BorderBrushProperty, "CardStroke");
+        return box;
+    }
+
+    public static bool Confirm(string title, string message, string yes, string? preview = null)
     {
         var window = Shell("CoreScope", 460);
         var ok = false;
@@ -63,6 +81,7 @@ internal static class FixDialogs
         var body = new StackPanel { Margin = new Thickness(24) };
         body.Children.Add(Text(title, "TitleText", new Thickness(0, 0, 0, 12)));
         body.Children.Add(Text(message, "BodyText"));
+        if (!string.IsNullOrWhiteSpace(preview)) body.Children.Add(PreviewBox(preview));
         body.Children.Add(buttons);
         window.Content = body;
         window.ShowDialog();

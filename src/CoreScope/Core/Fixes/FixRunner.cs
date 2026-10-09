@@ -79,7 +79,7 @@ public static class FixRunner
                 host.UnlockFullAccess();
             return FixResult.Failure("This fix needs full access. Use \"Unlock full access\", then try again.");
         }
-        if (action.Confirm is { } question && !host.Confirm(action.Label, question, action.Label)) return FixResult.Cancelled;
+        if (FixPreviews.Question(action) is { } question && !host.Confirm(action.Label, question, action.Label, FixPreviews.For(action))) return FixResult.Cancelled;
 
         try
         {

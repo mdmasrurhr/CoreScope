@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Threading;
 using System.Windows.Threading;
 using System.Windows;
@@ -77,18 +78,71 @@ public class TextSelectionTests
 
             var box = TextInteraction.BeginSelection(block);
             Assert.NotNull(box);
-            Assert.Equal("Select me please", box!.Text);
-            Assert.True(box.IsReadOnly);
-            Assert.Equal(18, box.FontSize);
-            Assert.Equal(FontWeights.SemiBold, box.FontWeight);
+            var textBox = Assert.IsType<System.Windows.Controls.TextBox>(box);
+            Assert.Equal("Select me please", textBox.Text);
+            Assert.True(textBox.IsReadOnly);
+            Assert.Equal(18, textBox.FontSize);
+            Assert.Equal(FontWeights.SemiBold, textBox.FontWeight);
             Assert.Equal(0, block.Opacity);                                // original hidden while the overlay draws
 
-            box.SelectAll();
-            Assert.Equal("Select me please", box.SelectedText);
+            textBox.SelectAll();
+            Assert.Equal("Select me please", textBox.SelectedText);
 
             other.Focus();                                                 // click elsewhere
             window.UpdateLayout();
             Assert.Equal(1, block.Opacity);                                // original is back
+        });
+    }
+
+    [Fact]
+    public void TextWithBoldRuns_KeepsItsFormattingInTheOverlay()
+    {
+        OnUiThread(window =>
+        {
+            var mixed = new TextBlock { TextWrapping = TextWrapping.Wrap, Width = 300 };
+            mixed.Inlines.Add(new Run("Score: "));
+            mixed.Inlines.Add(new Bold(new Run("92")));
+            mixed.Inlines.Add(new Run(" out of 100"));
+            var plain = new TextBlock { Text = "Just text" };
+            window.Content = new StackPanel { Children = { mixed, plain } };
+            Settle(window);
+
+            Assert.True(TextInteraction.IsMixed(mixed));
+            Assert.False(TextInteraction.IsMixed(plain));
+
+            var rich = Assert.IsType<System.Windows.Controls.RichTextBox>(TextInteraction.BeginSelection(mixed));
+            var text = new TextRange(rich.Document.ContentStart, rich.Document.ContentEnd).Text.TrimEnd('\r', '\n');
+            Assert.Equal("Score: 92 out of 100", text);
+            var bold = ((Paragraph)rich.Document.Blocks.FirstBlock).Inlines.Cast<Inline>().Single(i => i is Span);
+            Assert.Equal(FontWeights.Bold, bold.FontWeight);
+        });
+    }
+
+    [Fact]
+    public void DraggingAcrossTexts_HighlightsAndCopiesThemInReadingOrder()
+    {
+        OnUiThread(window =>
+        {
+            TextInteraction.Register();
+            var first = new TextBlock { Text = "One" };
+            var second = new TextBlock { Text = "Two" };
+            var third = new TextBlock { Text = "Three" };
+            var panel = new StackPanel { Children = { first, second, third } };
+            window.Content = panel;
+            Settle(window);
+
+            var box = TextInteraction.BeginSelection(first);
+            Assert.NotNull(box);
+            // The mouse is dragged down to the third text while the button is held.
+            var root = TextInteraction.PageRootOf(first);
+            Assert.True(TextInteraction.TrySelectRange(first, box!, root, third.TranslatePoint(new Point(2, 2), root), out var text));
+            Assert.Equal("One" + System.Environment.NewLine + "Two" + System.Environment.NewLine + "Three", text);
+            Assert.Equal(0, second.Opacity);   // drawn by its highlight overlay
+            Assert.Equal(0, third.Opacity);
+
+            Assert.False(TextInteraction.TrySelectRange(first, box!, root, new Point(1, 1), out _));   // back inside the first text: range gone
+            Assert.Equal(1, second.Opacity);
+            Assert.Equal(1, third.Opacity);
         });
     }
 

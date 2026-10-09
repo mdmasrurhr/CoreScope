@@ -175,6 +175,13 @@
                             <TextBlock Text="Tighter padding between cards, so more fits on screen." Style="{StaticResource Caption}" Margin="0,4,0,0" />
                         </StackPanel>
                     </DockPanel>
+                    <DockPanel Margin="0,16,0,0">
+                        <ToggleButton DockPanel.Dock="Right" Style="{StaticResource Switch}" IsChecked="{Binding KeepLayoutOnAllPages, Mode=TwoWay}" AutomationProperties.Name="Keep my layout on every page" />
+                        <StackPanel>
+                            <TextBlock Text="Keep my layout on every page" Style="{StaticResource BodyStrong}" />
+                            <TextBlock Text="Pages with their own look change colours and style, but the navigation stays where it is." Style="{StaticResource Caption}" Margin="0,4,0,0" TextWrapping="Wrap" />
+                        </StackPanel>
+                    </DockPanel>
                 </StackPanel>
             </Border>
 

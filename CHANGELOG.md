@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.1.1 — 2026-10-09
+
+**Better**
+- **"What this will do" before every fix:** the confirmation now shows the change in plain words and the exact command (for example `netsh advfirewall set allprofiles state on`). Network fixes (RSC, TCP auto-tuning) now ask before changing anything, too.
+- **Select across several texts:** press on a text and drag down or up over others to highlight them all; Ctrl+C or right-click → Copy puts them on the clipboard in reading order.
+- **Selecting text keeps its look:** text with bold or italic parts (and links) no longer turns plain while you select it.
+- **Keep my layout on every page** (Appearance → Window layout): pages with their own look change colours and style but the navigation stays where it is. When the layout does change, it now fades in instead of jumping.
+- Release process: every release is now built, tested and published automatically from a version tag.
+
 ## 1.1.0 — 2026-10-06
 
 **New**

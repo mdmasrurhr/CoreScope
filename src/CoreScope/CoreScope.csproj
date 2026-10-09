@@ -22,7 +22,7 @@
     <ApplicationIcon>Assets\CoreScope.ico</ApplicationIcon>
     <Product>CoreScope</Product>
     <Description>Hardware information, live sensors and plain-English insights for Windows PCs.</Description>
-    <Version>1.1.0</Version>
+    <Version>1.1.1</Version>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
     <!-- WPF0001: Fluent ThemeMode is marked experimental. CA1416: Windows-only APIs (this app is Windows-only). -->

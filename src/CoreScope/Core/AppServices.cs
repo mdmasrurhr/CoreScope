@@ -14,7 +14,7 @@ public interface IAppServices
     void SetOverlayVisible(bool visible);
     void RefreshOverlaySettings();
     /// <summary>Asks a yes/no question with a named "yes" button; true when the user agrees.</summary>
-    bool Confirm(string title, string message, string yes);
+    bool Confirm(string title, string message, string yes, string? preview = null);
     /// <summary>Shows a step-by-step walkthrough; its buttons call <paramref name="run"/> and show the returned message.</summary>
     void ShowGuide(Fixes.Guide guide, Func<Fixes.FixAction, System.Threading.Tasks.Task<Fixes.FixResult>> run);
 }

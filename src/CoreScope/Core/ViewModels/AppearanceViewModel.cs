@@ -380,6 +380,7 @@ public sealed class AppearanceViewModel : PageViewModel
 
     public double CornerRadius { get => _s.CornerRadius; set { _s.CornerRadius = (int)Math.Round(value); Touched(); } }
     public bool CompactSpacing { get => _s.CompactSpacing; set { _s.CompactSpacing = value; Touched(); } }
+    public bool KeepLayoutOnAllPages { get => _s.KeepLayoutOnAllPages; set { _s.KeepLayoutOnAllPages = value; Touched(); } }
 
     public string CurrentSkinName => _s.SkinId == ThemeCatalog.CustomId ? "Custom" : ThemeCatalog.Find(_s.SkinId)?.Name ?? "Custom";
 

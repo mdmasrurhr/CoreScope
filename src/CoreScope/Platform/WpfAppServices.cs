@@ -114,7 +114,7 @@ public sealed class WpfAppServices : IAppServices, IDisposable
         return dialog.FileName;
     }
 
-    public bool Confirm(string title, string message, string yes) => FixDialogs.Confirm(title, message, yes);
+    public bool Confirm(string title, string message, string yes, string? preview = null) => FixDialogs.Confirm(title, message, yes, preview);
 
     public void ShowGuide(CoreScope.Core.Fixes.Guide guide, Func<CoreScope.Core.Fixes.FixAction, System.Threading.Tasks.Task<CoreScope.Core.Fixes.FixResult>> run) => FixDialogs.Guide(guide, run);
 

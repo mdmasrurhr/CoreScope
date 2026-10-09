@@ -37,9 +37,13 @@ public partial class MainWindow : Window
     // ───────────── Window layouts (Appearance → Layout) ─────────────
     // Sidebar: 240 px labelled sidebar. Rail: 72 px icon rail. TopBar: tabs across the top, content below.
 
+    private string? _shownLayout;
+
     private void ApplyLayout()
     {
         var layout = ThemeManager.Effective.Layout;
+        var changed = _shownLayout is not null && _shownLayout != layout;
+        _shownLayout = layout;
         bool top = layout == "TopBar", rail = layout == "Rail";
 
         Root.ColumnDefinitions[0].Width = new GridLength(top ? 0 : rail ? 72 : 240);
@@ -88,6 +92,11 @@ public partial class MainWindow : Window
             ScrollViewer.SetHorizontalScrollBarVisibility(NavList, ScrollBarVisibility.Disabled);
             ScrollViewer.SetVerticalScrollBarVisibility(NavList, ScrollBarVisibility.Auto);
         }
+
+        // A short fade so the navigation moving to another place reads as a change of look, not a glitch.
+        if (changed && IsLoaded)
+            Root.BeginAnimation(OpacityProperty, new System.Windows.Media.Animation.DoubleAnimation(0.35, 1, TimeSpan.FromMilliseconds(220))
+            { EasingFunction = new System.Windows.Media.Animation.CubicEase { EasingMode = System.Windows.Media.Animation.EasingMode.EaseOut } });
     }
 
     private void NavList_PreviewMouseWheel(object sender, MouseWheelEventArgs e)

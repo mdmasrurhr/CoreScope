@@ -34,14 +34,21 @@ public static class ThemeLooks
         if (look.StartsWith(SkinPrefix, StringComparison.Ordinal) && ThemeCatalog.Find(look[SkinPrefix.Length..]) is { } skin)
         {
             ThemeCatalog.Apply(skin, copy);
-            return copy;
+            return KeepBaseLayout(baseSettings, copy);
         }
         if (look.StartsWith(ThemePrefix, StringComparison.Ordinal)
             && baseSettings.SavedThemes.TryGetValue(look[ThemePrefix.Length..], out var json)
             && ThemeFile.TryImport(json, copy, out _))
-            return copy;
+            return KeepBaseLayout(baseSettings, copy);
 
         return baseSettings; // the look no longer exists (theme deleted, skin removed): fall back quietly
+    }
+
+    /// <summary>With "keep my layout" on, a page's look changes colours and style but never moves the navigation.</summary>
+    private static AppSettings KeepBaseLayout(AppSettings baseSettings, AppSettings look)
+    {
+        if (baseSettings.KeepLayoutOnAllPages) look.Layout = baseSettings.Layout;
+        return look;
     }
 
     public static string? LookFor(AppSettings s, string page)

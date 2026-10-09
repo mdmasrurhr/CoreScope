@@ -1,0 +1,194 @@
+<UserControl x:Class="CoreScope.Views.OverviewView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="clr-namespace:CoreScope.Controls"
+             xmlns:vm="clr-namespace:CoreScope.Core.ViewModels">
+    <Grid>
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Margin="{DynamicResource PagePadding}" MaxWidth="{StaticResource PageMaxWidth}" HorizontalAlignment="Stretch">
+            <DockPanel>
+                <!-- Secondary actions: ghost buttons -->
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Top">
+                    <Button Style="{StaticResource GhostButton}" Command="{Binding CopySummaryCommand}" ToolTip="Copy a short spec summary (for forums, support chats)">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Style="{StaticResource Glyph}" Text="&#xE8C8;" Margin="0,0,8,0" />
+                            <TextBlock Text="Copy summary" FontWeight="SemiBold" />
+                        </StackPanel>
+                    </Button>
+                    <Button Style="{StaticResource GhostButton}" Command="{Binding ExportReportCommand}" ToolTip="Save a full report as a web page">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Style="{StaticResource Glyph}" Text="&#xE74E;" Margin="0,0,8,0" />
+                            <TextBlock Text="Export report" FontWeight="SemiBold" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+                <TextBlock Text="YOUR PC" Style="{StaticResource Overline}" />
+            </DockPanel>
+            <TextBlock Text="{Binding MachineName}" Style="{StaticResource Headline}" />
+            <TextBlock Text="{Binding MachineDetail}" Style="{StaticResource SubHeadline}" />
+
+            <!-- Graph time range (applies to every live graph) -->
+            <DockPanel Margin="0,0,0,12">
+                <ListBox DockPanel.Dock="Right" ItemsSource="{Binding RangeOptions}" SelectedItem="{Binding SelectedRange, Mode=TwoWay}"
+                         Background="Transparent" BorderThickness="0" AutomationProperties.Name="Graph time range">
+                    <ListBox.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel Orientation="Horizontal" />
+                        </ItemsPanelTemplate>
+                    </ListBox.ItemsPanel>
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Label}" Style="{StaticResource Caption}" Margin="4,0" />
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+                <TextBlock Text="Live · hover a graph to read past values" Style="{StaticResource Caption}" VerticalAlignment="Center" />
+            </DockPanel>
+
+            <!-- Live metrics -->
+            <ItemsControl ItemsSource="{Binding Tiles}" ItemTemplate="{StaticResource TileTemplate}" Margin="0,0,-12,12">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <!-- One row, equal-width tiles that fill the page width -->
+                        <c:AdaptiveGrid MinItemWidth="176" />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+            </ItemsControl>
+
+            <!-- Health check: the one primary action on this page -->
+            <Border Style="{StaticResource Card}" Margin="{DynamicResource SectionGap}">
+                <StackPanel>
+                    <DockPanel>
+                        <Button DockPanel.Dock="Right" Command="{Binding OpenInsightsCommand}" VerticalAlignment="Center"
+                                Style="{StaticResource PrimaryButton}" Padding="16,8" MinWidth="96">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="See all insights" />
+                                <TextBlock Style="{StaticResource Glyph}" Text="&#xE76C;" FontSize="{StaticResource IconSmall}" Margin="8,0,0,0" />
+                            </StackPanel>
+                        </Button>
+                        <TextBlock Style="{StaticResource Glyph}" Text="&#xEA80;" FontSize="{StaticResource IconTitle}" Margin="0,0,12,0"
+                                   Foreground="{DynamicResource AccentText}" />
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="Health check" Style="{StaticResource SectionTitle}" />
+                            <TextBlock Text="{Binding HealthSummary}" Style="{StaticResource Caption}" Margin="0,4,0,0" />
+                        </StackPanel>
+                    </DockPanel>
+                    <ItemsControl ItemsSource="{Binding TopInsights}" ItemTemplate="{StaticResource InsightTemplate}" Margin="0,16,0,-12"
+                                  Visibility="{Binding TopInsights.Count, Converter={StaticResource Vis}}" />
+                    <DockPanel Margin="0,16,0,0" Visibility="{Binding ShowAllClear, Converter={StaticResource Vis}}">
+                        <TextBlock Style="{StaticResource Glyph}" Text="&#xE930;" Foreground="{StaticResource SevGood}" Margin="0,0,8,0" />
+                        <TextBlock Text="No problems found. Everything checked out." Style="{StaticResource BodyText}" />
+                    </DockPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- What's using the PC right now -->
+            <Border Style="{StaticResource Card}" Margin="{DynamicResource SectionGap}">
+                <StackPanel>
+                    <TextBlock Text="What's using your PC" Style="{StaticResource SectionTitle}" />
+                    <TextBlock Text="Apps grouped together (e.g. all browser processes), updated every 2 seconds." Style="{StaticResource Caption}" Margin="0,4,0,12" />
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="24" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="CPU" Style="{StaticResource Overline}" Margin="0,0,0,8" />
+                            <ItemsControl ItemsSource="{Binding TopCpu}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <DockPanel Margin="0,4">
+                                            <TextBlock DockPanel.Dock="Right" Text="{Binding CpuText}" Style="{StaticResource BodyStrong}" Typography.NumeralAlignment="Tabular" />
+                                            <TextBlock Text="{Binding Name}" Style="{StaticResource BodyText}" TextTrimming="CharacterEllipsis" />
+                                        </DockPanel>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <TextBlock Text="Measuring…" Style="{StaticResource Caption}" Visibility="{Binding TopCpu.Count, Converter={StaticResource Vis}, ConverterParameter=invert}" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="2">
+                            <TextBlock Text="MEMORY" Style="{StaticResource Overline}" Margin="0,0,0,8" />
+                            <ItemsControl ItemsSource="{Binding TopMemory}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <DockPanel Margin="0,4">
+                                            <TextBlock DockPanel.Dock="Right" Text="{Binding MemoryText}" Style="{StaticResource BodyStrong}" Typography.NumeralAlignment="Tabular" />
+                                            <TextBlock Text="{Binding Name}" Style="{StaticResource BodyText}" TextTrimming="CharacterEllipsis" />
+                                        </DockPanel>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- Component summary cards (modular grid, 3 columns) -->
+            <TextBlock Text="Components" Style="{StaticResource SectionTitle}" Margin="0,0,0,12" />
+            <ContentControl ContentTemplate="{StaticResource SkeletonCards}" Focusable="False"
+                            Visibility="{Binding Cards.Count, Converter={StaticResource Vis}, ConverterParameter=invert}" />
+            <ItemsControl ItemsSource="{Binding Cards}" Margin="0,0,-12,0" KeyboardNavigation.TabNavigation="Continue">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <UniformGrid Columns="3" />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="{x:Type vm:SummaryCardViewModel}">
+                        <Button Command="{Binding OpenCommand}" Style="{StaticResource CardButton}" Margin="0,0,12,12"
+                                AutomationProperties.Name="{Binding Label}">
+                            <StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                    <TextBlock Text="{Binding Glyph}" Style="{StaticResource Glyph}"
+                                               Foreground="{DynamicResource AccentText}" />
+                                    <TextBlock Text="{Binding Label}" Style="{StaticResource Caption}" Margin="8,0,0,0" VerticalAlignment="Center" />
+                                </StackPanel>
+                                <TextBlock Text="{Binding Title}" Style="{StaticResource SectionTitle}" />
+                                <TextBlock Text="{Binding Detail}" Style="{StaticResource Caption}" Margin="0,4,0,0" />
+                            </StackPanel>
+                        </Button>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </StackPanel>
+    </ScrollViewer>
+
+    <!-- Confirmation toast (fades in 200 ms, auto-hides) -->
+    <Border HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,32" Padding="16,12" IsHitTestVisible="False" Opacity="0"
+            CornerRadius="{DynamicResource RadiusCard}" Background="{DynamicResource SolidBackgroundFillColorTertiaryBrush}"
+            BorderThickness="1" BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}">
+        <Border.RenderTransform>
+            <TranslateTransform Y="12" />
+        </Border.RenderTransform>
+        <StackPanel Orientation="Horizontal">
+            <TextBlock Style="{StaticResource Glyph}" Text="&#xE930;" Foreground="{StaticResource SevGood}" Margin="0,0,8,0" />
+            <TextBlock Text="{Binding ToastText}" Style="{StaticResource BodyStrong}" />
+        </StackPanel>
+        <Border.Style>
+            <Style TargetType="Border">
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding ShowToast}" Value="True">
+                        <DataTrigger.EnterActions>
+                            <BeginStoryboard>
+                                <Storyboard>
+                                    <DoubleAnimation Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.2" />
+                                    <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)" To="0" Duration="0:0:0.2" />
+                                </Storyboard>
+                            </BeginStoryboard>
+                        </DataTrigger.EnterActions>
+                        <DataTrigger.ExitActions>
+                            <BeginStoryboard>
+                                <Storyboard>
+                                    <DoubleAnimation Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.15" />
+                                    <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)" To="12" Duration="0:0:0.15" />
+                                </Storyboard>
+                            </BeginStoryboard>
+                        </DataTrigger.ExitActions>
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+        </Border.Style>
+    </Border>
+    </Grid>
+</UserControl>

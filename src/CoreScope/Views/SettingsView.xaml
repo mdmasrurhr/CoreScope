@@ -1,0 +1,168 @@
+<UserControl x:Class="CoreScope.Views.SettingsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <UserControl.Resources>
+        <Style x:Key="SettingRow" TargetType="DockPanel">
+            <Setter Property="Margin" Value="0,0,0,16" />
+        </Style>
+        <Style x:Key="Field" TargetType="ComboBox" BasedOn="{StaticResource {x:Type ComboBox}}">
+            <Setter Property="MinWidth" Value="160" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+    </UserControl.Resources>
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Margin="{DynamicResource PagePadding}" MaxWidth="{StaticResource PageMaxWidth}" HorizontalAlignment="Stretch">
+            <TextBlock Text="SETTINGS" Style="{StaticResource Overline}" />
+            <TextBlock Text="Make CoreScope yours" Style="{StaticResource Headline}" />
+            <TextBlock Text="Changes save automatically." Style="{StaticResource SubHeadline}" />
+
+            <!-- General -->
+            <Border Style="{StaticResource Card}" Margin="{DynamicResource CardGap}">
+                <StackPanel>
+                    <TextBlock Text="General" Style="{StaticResource TitleText}" Margin="0,0,0,16" />
+                    <DockPanel Style="{StaticResource SettingRow}">
+                        <ToggleButton DockPanel.Dock="Right" Style="{StaticResource Switch}" IsChecked="{Binding StartWithWindows, Mode=TwoWay}" AutomationProperties.Name="Start with Windows" />
+                        <StackPanel>
+                            <TextBlock Text="Start with Windows" Style="{StaticResource BodyStrong}" />
+                            <TextBlock Text="Launches in the tray when you sign in. If you turn this on while full sensors are unlocked, it also starts unlocked, with no UAC prompt." Style="{StaticResource Caption}" Margin="0,4,0,0" />
+                        </StackPanel>
+                    </DockPanel>
+                    <DockPanel Style="{StaticResource SettingRow}">
+                        <ToggleButton DockPanel.Dock="Right" Style="{StaticResource Switch}" IsChecked="{Binding CloseToTray, Mode=TwoWay}" AutomationProperties.Name="Keep running in the tray" />
+                        <StackPanel>
+                            <TextBlock Text="Keep running in the tray when closed" Style="{StaticResource BodyStrong}" />
+                            <TextBlock Text="Alerts and the overlay keep working. Exit from the tray icon's menu." Style="{StaticResource Caption}" Margin="0,4,0,0" />
+                        </StackPanel>
+                    </DockPanel>
+                    <DockPanel Style="{StaticResource SettingRow}">
+                        <ToggleButton DockPanel.Dock="Right" Style="{StaticResource Switch}" IsChecked="{Binding StartMinimized, Mode=TwoWay}" AutomationProperties.Name="Start minimized" />
+                        <TextBlock Text="Start minimized to the tray" Style="{StaticResource BodyStrong}" VerticalAlignment="Center" />
+                    </DockPanel>
+                    <DockPanel Style="{StaticResource SettingRow}">
+                        <ToggleButton DockPanel.Dock="Right" Style="{StaticResource Switch}" IsChecked="{Binding UseFahrenheit, Mode=TwoWay}" AutomationProperties.Name="Use Fahrenheit" />
+                        <TextBlock Text="Show temperatures in °F" Style="{StaticResource BodyStrong}" VerticalAlignment="Center" />
+                    </DockPanel>
+                    <DockPanel Margin="0">
+                        <ComboBox DockPanel.Dock="Right" Style="{StaticResource Field}" ItemsSource="{Binding RefreshOptions}" SelectedItem="{Binding RefreshInterval, Mode=TwoWay}" AutomationProperties.Name="Refresh rate" />
+                        <StackPanel>
+                            <TextBlock Text="Sensor refresh rate" Style="{StaticResource BodyStrong}" />
+                            <TextBlock Text="Slower refresh uses less CPU and battery." Style="{StaticResource Caption}" Margin="0,4,0,0" />
+                        </StackPanel>
+                    </DockPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- Overlay -->
+            <Border Style="{StaticResource Card}" Margin="{DynamicResource CardGap}">
+                <StackPanel>
+                    <TextBlock Text="Overlay" Style="{StaticResource TitleText}" Margin="0,0,0,16" />
+                    <DockPanel Style="{StaticResource SettingRow}">
+                        <ToggleButton DockPanel.Dock="Right" Style="{StaticResource Switch}" IsChecked="{Binding ShowOverlay, Mode=TwoWay}" AutomationProperties.Name="Show overlay" />
+                        <StackPanel>
+                            <TextBlock Text="Always-on-top overlay" Style="{StaticResource BodyStrong}" />
+                            <TextBlock Text="A small live readout of CPU and GPU load and temperature, plus RAM. Drag it anywhere." Style="{StaticResource Caption}" Margin="0,4,0,0" />
+                        </StackPanel>
+                    </DockPanel>
+                    <DockPanel Style="{StaticResource SettingRow}">
+                        <ToggleButton DockPanel.Dock="Right" Style="{StaticResource Switch}" IsChecked="{Binding OverlayClickThrough, Mode=TwoWay}" AutomationProperties.Name="Overlay click-through" />
+                        <StackPanel>
+                            <TextBlock Text="Click-through" Style="{StaticResource BodyStrong}" />
+                            <TextBlock Text="Clicks pass to whatever is underneath (good for games). Turn off to move the overlay." Style="{StaticResource Caption}" Margin="0,4,0,0" />
+                        </StackPanel>
+                    </DockPanel>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="240" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Opacity" Style="{StaticResource BodyStrong}" VerticalAlignment="Center" />
+                        <Slider Grid.Column="1" Minimum="0.3" Maximum="1" SmallChange="0.05" LargeChange="0.1" VerticalAlignment="Center"
+                                Value="{Binding OverlayOpacity, Mode=TwoWay}" AutomationProperties.Name="Overlay opacity" />
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- Alerts -->
+            <Border Style="{StaticResource Card}" Margin="{DynamicResource CardGap}">
+                <StackPanel>
+                    <DockPanel Margin="0,0,0,16">
+                        <ToggleButton DockPanel.Dock="Right" Style="{StaticResource Switch}" IsChecked="{Binding AlertsEnabled, Mode=TwoWay}" AutomationProperties.Name="Alerts" />
+                        <StackPanel>
+                            <TextBlock Text="Alerts" Style="{StaticResource TitleText}" />
+                            <TextBlock Text="A Windows notification when a reading stays past its limit for 10 seconds (at most once every 10 minutes per alert)."
+                                       Style="{StaticResource Caption}" Margin="0,4,0,0" />
+                        </StackPanel>
+                    </DockPanel>
+                    <Grid IsEnabled="{Binding AlertsEnabled}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <TextBlock Text="CPU temperature above (°C)" Style="{StaticResource BodyText}" VerticalAlignment="Center" />
+                        <ComboBox Grid.Column="1" Style="{StaticResource Field}" ItemsSource="{Binding CpuTempChoices}" SelectedItem="{Binding AlertCpuTempC, Mode=TwoWay}" AutomationProperties.Name="CPU alert" />
+                        <TextBlock Grid.Row="1" Text="GPU temperature above (°C)" Style="{StaticResource BodyText}" VerticalAlignment="Center" Margin="0,8,0,0" />
+                        <ComboBox Grid.Row="1" Grid.Column="1" Style="{StaticResource Field}" Margin="0,8,0,0" ItemsSource="{Binding GpuTempChoices}" SelectedItem="{Binding AlertGpuTempC, Mode=TwoWay}" AutomationProperties.Name="GPU alert" />
+                        <TextBlock Grid.Row="2" Text="Drive temperature above (°C)" Style="{StaticResource BodyText}" VerticalAlignment="Center" Margin="0,8,0,0" />
+                        <ComboBox Grid.Row="2" Grid.Column="1" Style="{StaticResource Field}" Margin="0,8,0,0" ItemsSource="{Binding DriveTempChoices}" SelectedItem="{Binding AlertDriveTempC, Mode=TwoWay}" AutomationProperties.Name="Drive alert" />
+                        <TextBlock Grid.Row="3" Text="Battery below (%) on battery power" Style="{StaticResource BodyText}" VerticalAlignment="Center" Margin="0,8,0,0" />
+                        <ComboBox Grid.Row="3" Grid.Column="1" Style="{StaticResource Field}" Margin="0,8,0,0" ItemsSource="{Binding BatteryChoices}" SelectedItem="{Binding AlertBatteryPercent, Mode=TwoWay}" AutomationProperties.Name="Battery alert" />
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- Updates -->
+            <Border Style="{StaticResource Card}" Margin="{DynamicResource CardGap}">
+                <StackPanel>
+                    <TextBlock Text="Updates" Style="{StaticResource TitleText}" Margin="0,0,0,16" />
+                    <DockPanel Style="{StaticResource SettingRow}">
+                        <ToggleButton DockPanel.Dock="Right" Style="{StaticResource Switch}" IsChecked="{Binding Update.AutoCheck, Mode=TwoWay}" AutomationProperties.Name="Check for updates automatically" />
+                        <StackPanel>
+                            <TextBlock Text="Check for updates automatically" Style="{StaticResource BodyStrong}" />
+                            <TextBlock Text="Asks GitHub for the latest CoreScope release at most twice a day. Nothing about your PC is sent." Style="{StaticResource Caption}" Margin="0,4,0,0" />
+                        </StackPanel>
+                    </DockPanel>
+                    <DockPanel>
+                        <Button DockPanel.Dock="Right" Command="{Binding Update.CheckNowCommand}" Content="Check now" Padding="16,8" MinWidth="96" VerticalAlignment="Center" />
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Style="{StaticResource BodyStrong}">
+                                <Run Text="Installed version" /> <Run Text="{Binding Update.CurrentVersion, Mode=OneWay}" />
+                            </TextBlock>
+                            <TextBlock Text="{Binding Update.SettingsStatus}" Style="{StaticResource Caption}" Margin="0,4,0,0"
+                                       Visibility="{Binding Update.SettingsStatus, Converter={StaticResource Vis}}" />
+                        </StackPanel>
+                    </DockPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- About -->
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <DockPanel Margin="0,0,0,12">
+                        <Image DockPanel.Dock="Left" Source="/Assets/CoreScope.ico" Width="32" Height="32" Margin="0,0,12,0" />
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Style="{StaticResource TitleText}">
+                                <Run Text="CoreScope" /> <Run Text="{Binding Version, Mode=OneWay}" />
+                            </TextBlock>
+                            <TextBlock Text="Hardware information, live sensors, insights, upgrades and control for Windows PCs." Style="{StaticResource Caption}" Margin="0,4,0,0" />
+                        </StackPanel>
+                    </DockPanel>
+                    <TextBlock Style="{StaticResource BodySecondary}" Margin="0,0,0,12"
+                               Text="Sensors come from Windows itself, your graphics driver and the drives' own health logs, plus LibreHardwareMonitor (MPL-2.0). CoreScope installs no kernel drivers." />
+                    <WrapPanel Margin="-12,0,0,0">
+                        <Button Style="{StaticResource GhostButton}" Command="{Binding RunSelfTestCommand}" Content="Run self-test" />
+                        <Button Style="{StaticResource GhostButton}" Command="{Binding OpenLogCommand}" Content="Open log folder" />
+                        <Button Style="{StaticResource GhostButton}" Command="{Binding OpenDataFolderCommand}" Content="Open settings folder" />
+                        <Button Style="{StaticResource GhostButton}" Command="{Binding OpenNoticesCommand}" Content="Third-party licenses" />
+                    </WrapPanel>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

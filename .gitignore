@@ -1,0 +1,9 @@
+bin/
+obj/
+app/
+build.log
+.refcheck/
+*.user
+.vs/
+dist/
+tools/msix/.sdk/

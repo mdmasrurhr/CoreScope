@@ -1,0 +1,31 @@
+CoreScope log started 2026-10-09 17:22:28
+17:22:28.339 INFO  Fix: power.restart (power.restart)
+17:22:28.342 INFO    shutdown /r /t 15 /c "CoreScope: restarting as you asked" → 0 
+17:22:28.372 INFO  Fix: power.uefi (power.uefi)
+17:22:28.373 INFO    shutdown /r /fw /t 15 /c "CoreScope: restarting into BIOS / UEFI setup" → 0 
+17:22:28.379 INFO  Fix: disk.trim (disk.trim)
+17:22:28.380 INFO    fsutil behavior set DisableDeleteNotify 0 → 0 
+17:22:28.382 INFO  Fix: disk.hibernate.off (disk.hibernate.off)
+17:22:28.383 INFO    powercfg /hibernate off → 0 
+17:22:28.390 INFO  Fix: time.sync (time.sync)
+17:22:28.392 INFO    w32tm /resync /force → 0 
+17:22:28.437 INFO  Fix: security.firewall (security.firewall)
+17:22:28.439 INFO    netsh advfirewall set allprofiles state on → 0 
+17:22:28.448 INFO  Fix: security.defender.update (security.defender.update)
+17:22:28.452 INFO    C:\Program Files\Windows Defender\MpCmdRun.exe -SignatureUpdate → 0 
+17:22:28.457 INFO  Fix: update.service (update.service)
+17:22:28.459 INFO    net start wuauserv → 0 
+17:22:28.463 INFO  Fix: restore.enable (restore.enable)
+17:22:28.464 INFO    powershell -NoProfile -Command "Enable-ComputerRestore -Drive ($env:SystemDrive + '\')" → 0 
+17:22:28.469 INFO  Fix: restore.create (restore.create)
+17:22:28.470 INFO    powershell -NoProfile -Command "Checkpoint-Computer -Description 'CoreScope restore point' -RestorePointType MODIFY_SETTINGS" → 0 
+17:22:28.472 INFO  Fix: devices.scan (devices.scan)
+17:22:28.473 INFO    pnputil /scan-devices → 0 
+17:22:28.479 INFO  Fix: made.up (Mystery)
+17:22:28.537 INFO  Fix: security.firewall (Turn on)
+17:22:28.538 INFO    netsh advfirewall set allprofiles state on → 0 
+17:22:28.585 INFO  Fix: power.uefi (Restart into BIOS / UEFI setup)
+17:22:28.585 INFO    shutdown /r /fw /t 15 /c "CoreScope: restarting into BIOS / UEFI setup" → 0 
+17:22:28.607 INFO  Fix: security.firewall (Turn on)
+17:22:28.608 INFO    netsh advfirewall set allprofiles state on → 5 Access is denied.
+17:22:29.364 INFO  Temp clean: 439 files, 88965676 bytes freed, 35 skipped

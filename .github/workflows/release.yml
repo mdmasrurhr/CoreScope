@@ -1,0 +1,100 @@
+name: Release
+
+# Push a tag such as v1.2.0 to build, test and publish a release.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    outputs:
+      version: ${{ steps.ver.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Read version and check it matches the tag
+        id: ver
+        shell: pwsh
+        run: |
+          [xml]$proj = Get-Content src/CoreScope/CoreScope.csproj
+          $v = ($proj.Project.PropertyGroup | Where-Object { $_.Version } | Select-Object -First 1).Version
+          "version=$v" >> $env:GITHUB_OUTPUT
+          if ($env:GITHUB_REF_TYPE -eq 'tag' -and $env:GITHUB_REF_NAME -ne "v$v") {
+            throw "Tag $env:GITHUB_REF_NAME does not match the project version $v. Update CoreScope.csproj or retag."
+          }
+
+      - name: Test
+        run: dotnet test tests/CoreScope.Tests -c Release -nologo
+
+      - name: Install Inno Setup
+        shell: pwsh
+        run: |
+          if (-not (Test-Path "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe")) {
+            choco install innosetup -y --no-progress
+          }
+
+      - name: Package
+        shell: pwsh
+        run: ./tools/package.ps1
+
+      - name: Check the installer was built
+        shell: pwsh
+        run: |
+          $v = '${{ steps.ver.outputs.version }}'
+          foreach ($f in "dist/CoreScope-$v-Setup.exe", "dist/CoreScope-$v-Setup.exe.sha256", "dist/CoreScope-$v-win-x64.zip") {
+            if (-not (Test-Path $f)) { throw "Missing $f" }
+          }
+
+      - name: Publish the release
+        if: github.ref_type == 'tag'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $v = '${{ steps.ver.outputs.version }}'
+          $tag = $env:GITHUB_REF_NAME
+          $notes = "Release notes: [CHANGELOG.md](https://github.com/$env:GITHUB_REPOSITORY/blob/$tag/CHANGELOG.md)`n`nDownload **CoreScope-$v-Setup.exe** and run it. The SHA-256 is in the .sha256 file."
+          gh release create $tag --title "CoreScope $v" --notes $notes `
+            "dist/CoreScope-$v-Setup.exe" "dist/CoreScope-$v-Setup.exe.sha256" "dist/CoreScope-$v-win-x64.zip"
+
+      - name: Keep the build for manual runs
+        if: github.ref_type != 'tag'
+        uses: actions/upload-artifact@v4
+        with:
+          name: CoreScope-${{ steps.ver.outputs.version }}
+          path: dist/CoreScope-*
+
+  winget:
+    # Opens the pull request to microsoft/winget-pkgs. Needs a repository secret WINGET_TOKEN:
+    # a classic personal access token with the public_repo scope. Skipped when the secret is not set.
+    needs: release
+    if: github.ref_type == 'tag'
+    runs-on: windows-latest
+    steps:
+      - name: Check for the token
+        id: gate
+        shell: pwsh
+        env:
+          TOKEN: ${{ secrets.WINGET_TOKEN }}
+        run: |
+          "enabled=$([bool]$env:TOKEN)".ToLower() >> $env:GITHUB_OUTPUT
+          if (-not $env:TOKEN) { Write-Host "WINGET_TOKEN is not set; skipping the winget update." }
+      - name: Update winget-pkgs
+        if: steps.gate.outputs.enabled == 'true'
+        shell: pwsh
+        env:
+          WINGET_TOKEN: ${{ secrets.WINGET_TOKEN }}
+        run: |
+          $v = '${{ needs.release.outputs.version }}'
+          $url = "https://github.com/$env:GITHUB_REPOSITORY/releases/download/v$v/CoreScope-$v-Setup.exe"
+          Invoke-WebRequest https://aka.ms/wingetcreate/latest -OutFile wingetcreate.exe
+          ./wingetcreate.exe update Rakin.CoreScope --version $v --urls $url --submit --token $env:WINGET_TOKEN

@@ -1,0 +1,14 @@
+name: Feature request
+description: Suggest an idea or a new check
+labels: [enhancement]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would you like CoreScope to do?
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: What problem does it solve for you?

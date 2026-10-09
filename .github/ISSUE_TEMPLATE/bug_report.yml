@@ -1,0 +1,35 @@
+name: Bug report
+description: Something is wrong, missing or shown incorrectly
+labels: [bug]
+body:
+  - type: input
+    id: version
+    attributes:
+      label: CoreScope version
+      description: Shown in Settings, or in the installer file name.
+    validations:
+      required: true
+  - type: input
+    id: windows
+    attributes:
+      label: Windows version and PC
+      placeholder: Windows 11 23H2, Lenovo Legion 5, Ryzen 7 / RTX 4060
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Diagnostics
+      description: |
+        Run `CoreScope.exe --selftest` from `%LocalAppData%\Programs\CoreScope`, then drag `selftest.json` and `corescope.log`
+        into this box. The self-test never changes any setting. Please look through them before posting; they list your hardware.

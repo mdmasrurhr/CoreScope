@@ -1,7 +1,0 @@
-# Version manifest. Fill {{VERSION}}; submit all three files to github.com/microsoft/winget-pkgs under
-# manifests/r/Rakin/CoreScope/{{VERSION}}/
-PackageIdentifier: Rakin.CoreScope
-PackageVersion: {{VERSION}}
-DefaultLocale: en-US
-ManifestType: version
-ManifestVersion: 1.9.0

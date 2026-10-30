@@ -147,6 +147,29 @@ public class TextSelectionTests
     }
 
     [Fact]
+    public void CtrlA_SelectsEveryTextOnThePage_AndEscapeClearsIt()
+    {
+        OnUiThread(window =>
+        {
+            var one = new TextBlock { Text = "One" };
+            var two = new TextBlock { Text = "Two" };
+            var inButton = new TextBlock { Text = "Click me" };
+            var typing = new System.Windows.Controls.TextBox { Text = "typed" };
+            window.Content = new StackPanel { Children = { one, two, new Button { Content = inButton }, typing } };
+            Settle(window);
+
+            Assert.True(TextInteraction.SelectAllOnPage(window, out var text));
+            Assert.Equal("One" + System.Environment.NewLine + "Two", text);   // buttons and text boxes keep their own behaviour, so they are not part of it
+            Assert.Equal(0, one.Opacity);                                                                      // drawn by the highlight overlay
+            Assert.Equal(1, inButton.Opacity);
+
+            TextInteraction.ClearPageSelection();
+            Assert.Equal(1, one.Opacity);
+            Assert.Equal(1, two.Opacity);
+        });
+    }
+
+    [Fact]
     public void ExistingContextMenusAreRespected()
     {
         OnUiThread(window =>

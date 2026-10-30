@@ -231,7 +231,7 @@ public class TempFilesTests
 
 public class HealthInsightTests
 {
-    private static SystemSpec BaseSpec(string build = "26100", string name = "Microsoft Windows 11 Pro")
+    private static SystemSpec BaseSpec(string build = "26200", string name = "Microsoft Windows 11 Pro")
     {
         var smbios = SmBios.Parse(new byte[] { 0, 3, 6, 0, 6, 0, 0, 0, 127, 4, 0, 0, 0, 0 }) ?? throw new InvalidOperationException();
         var spec = new SystemSpec { SmBios = smbios };

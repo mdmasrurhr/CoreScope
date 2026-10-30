@@ -33,6 +33,114 @@ public static class TextInteraction
         // Class handlers on input events always fire (unlike Loaded, which WPF only raises for elements with their own handler).
         EventManager.RegisterClassHandler(typeof(TextBlock), UIElement.PreviewMouseRightButtonDownEvent, new MouseButtonEventHandler(OnRightMouseDown));
         EventManager.RegisterClassHandler(typeof(TextBlock), UIElement.MouseLeftButtonDownEvent, new MouseButtonEventHandler(OnMouseDown));
+        EventManager.RegisterClassHandler(typeof(Window), Keyboard.PreviewKeyDownEvent, new KeyEventHandler(OnKeyDown));
+    }
+
+    // ───────────── Ctrl+A / Ctrl+C for the whole page ─────────────
+
+    /// <summary>Marks the selection overlays, so they are not mistaken for a text box the user is typing in.</summary>
+    private const string OverlayTag = "CoreScope.SelectionOverlay";
+
+    private static PageSelection? _page;
+
+    private static void OnKeyDown(object sender, KeyEventArgs e)
+    {
+        if (sender is not Window window || e.Handled || window is OverlayWindow) return;
+        if (e.Key == Key.Escape) { _page?.Clear(); return; }
+        if ((Keyboard.Modifiers & ModifierKeys.Control) == 0 || (Keyboard.Modifiers & (ModifierKeys.Alt | ModifierKeys.Shift)) != 0) return;
+        if (Keyboard.FocusedElement is TextBoxBase typing && !Equals(typing.Tag, OverlayTag)) return;   // a real text box keeps its own Ctrl+A / Ctrl+C
+
+        if (e.Key == Key.A)
+        {
+            if (SelectAllOnPage(window, out _)) e.Handled = true;
+        }
+        else if (e.Key == Key.C && _page is { IsActive: true } page)
+        {
+            PutOnClipboard(page.Text, window.Content as UIElement);
+            e.Handled = true;
+        }
+    }
+
+    /// <summary>Highlights every selectable text on the page that is showing; Ctrl+C then copies them all in reading order.</summary>
+    public static bool SelectAllOnPage(Window window, out string text)
+    {
+        text = "";
+        _page?.Clear();
+        if (Keyboard.FocusedElement is TextBoxBase { Tag: OverlayTag }) Keyboard.ClearFocus();   // drops a single-text overlay first
+        var root = CurrentPage(window);
+        if (root is null) return false;
+        var page = new PageSelection(window);
+        if (!page.Show(root)) return false;
+        _page = page;
+        text = page.Text;
+        return true;
+    }
+
+    /// <summary>Removes the page-wide highlight, if any.</summary>
+    public static void ClearPageSelection() => _page?.Clear();
+
+    /// <summary>The page the window is showing: the first visible view, otherwise the whole window content.</summary>
+    private static FrameworkElement? CurrentPage(Window window)
+    {
+        FrameworkElement? found = null;
+        void Visit(DependencyObject node)
+        {
+            if (found is not null || node is UIElement { IsVisible: false }) return;
+            if (node is UserControl view && view.GetType().Namespace == "CoreScope.Views") { found = view; return; }
+            for (var i = 0; i < VisualTreeHelper.GetChildrenCount(node); i++) Visit(VisualTreeHelper.GetChild(node, i));
+        }
+        Visit(window);
+        return found ?? window.Content as FrameworkElement;
+    }
+
+    private sealed class PageSelection
+    {
+        private readonly Window _window;
+        private readonly List<(TextBlock Block, AdornerLayer Layer, SelectionAdorner Adorner, double Opacity)> _shown = new();
+
+        public PageSelection(Window window) => _window = window;
+
+        public string Text { get; private set; } = "";
+        public bool IsActive => _shown.Count > 0;
+
+        public bool Show(FrameworkElement root)
+        {
+            var texts = Eligible(root, null);
+            foreach (var (block, _) in texts)
+            {
+                if (AdornerLayer.GetAdornerLayer(block) is not { } layer) continue;
+                var box = CreateBox(block, TextOf(block));
+                box.Focusable = _shown.Count == 0;   // the first overlay holds keyboard focus so the highlights paint like an active selection
+                box.SelectAll();
+                var adorner = new SelectionAdorner(block, box);
+                var opacity = block.Opacity;
+                block.Opacity = 0;
+                layer.Add(adorner);
+                _shown.Add((block, layer, adorner, opacity));
+            }
+            if (_shown.Count == 0) return false;
+            (_shown[0].Adorner.Box as UIElement)?.Focus();
+            Text = Join(texts.Select(t => (t.Rect.Y, t.Rect.X, TextOf(t.Block))));
+            _window.PreviewMouseDown += OnMouseDown;
+            // Highlights set from code are not always painted on the first pass; select again once the overlays are laid out.
+            _window.Dispatcher.BeginInvoke(() => { foreach (var shown in _shown) if (shown.Adorner.Box is TextBoxBase box) { box.InvalidateVisual(); box.SelectAll(); } }, DispatcherPriority.Render);
+            return true;
+        }
+
+        private void OnMouseDown(object sender, MouseButtonEventArgs e) => Clear();
+
+        public void Clear()
+        {
+            foreach (var (block, layer, adorner, opacity) in _shown)
+            {
+                layer.Remove(adorner);
+                block.Opacity = opacity;
+            }
+            _shown.Clear();
+            Text = "";
+            _window.PreviewMouseDown -= OnMouseDown;
+            if (ReferenceEquals(_page, this)) _page = null;
+        }
     }
 
     private static void OnRightMouseDown(object sender, MouseButtonEventArgs e)
@@ -194,8 +302,10 @@ public static class TextInteraction
             Effect = block.Effect,
             SelectionOpacity = 0.55,
             ContextMenu = BuildBoxMenu(),
+            Tag = OverlayTag,
         };
         box.SetResourceReference(TextBoxBase.SelectionBrushProperty, "AccentFillColorSelectedTextBackgroundBrush");
+        box.RequestBringIntoView += (_, e) => e.Handled = true;   // an overlay sits on text that is already where it should be; never scroll the page for it
         TextBlock.SetLineHeight(box, block.LineHeight);
         TextBlock.SetLineStackingStrategy(box, block.LineStackingStrategy);
         return box;
@@ -205,6 +315,8 @@ public static class TextInteraction
     private sealed class SelectionAdorner : Adorner
     {
         private readonly UIElement _box;
+
+        public UIElement Box => _box;
 
         public SelectionAdorner(UIElement adorned, UIElement box) : base(adorned)
         {
@@ -281,8 +393,10 @@ public static class TextInteraction
             Padding = new Thickness(0), BorderThickness = new Thickness(0), Margin = new Thickness(0), MinHeight = 0, MinWidth = 0,
             Background = Brushes.Transparent, FocusVisualStyle = null, Cursor = Cursors.IBeam, Effect = block.Effect, SelectionOpacity = 0.55,
             ContextMenu = BuildBoxMenu(),
+            Tag = OverlayTag,
         };
         box.SetResourceReference(TextBoxBase.SelectionBrushProperty, "AccentFillColorSelectedTextBackgroundBrush");
+        box.RequestBringIntoView += (_, e) => e.Handled = true;   // an overlay sits on text that is already where it should be; never scroll the page for it
         return box;
     }
 
@@ -410,7 +524,7 @@ public static class TextInteraction
     }
 
     /// <summary>The texts on a page that the mouse may select, in reading order (the anchor is included even while hidden).</summary>
-    private static List<(TextBlock Block, Rect Rect)> Eligible(FrameworkElement root, TextBlock anchor)
+    private static List<(TextBlock Block, Rect Rect)> Eligible(FrameworkElement root, TextBlock? anchor)
     {
         var found = new List<(TextBlock Block, Rect Rect)>();
         void Visit(DependencyObject node)

@@ -4,6 +4,7 @@
 
 **Better**
 - **"What this will do" before every fix:** the confirmation now shows the change in plain words and the exact command (for example `netsh advfirewall set allprofiles state on`). Network fixes (RSC, TCP auto-tuning) now ask before changing anything, too.
+- **"No Windows update in N days" now tells the truth:** when your Windows release is out of support (for example 23H2 after Nov 2025), the finding says automatic updates are fine but no more are released for that version, and points to upgrading Windows. It no longer blames a failing updater.
 - **Ctrl+A and Ctrl+C work on the whole page:** Ctrl+A highlights every text on the page (Esc or a click clears it) and Ctrl+C copies them all in reading order. Text boxes you type in keep their normal Ctrl+A / Ctrl+C.
 - **Select across several texts:** press on a text and drag down or up over others to highlight them all; Ctrl+C or right-click → Copy puts them on the clipboard in reading order.
 - **Selecting text keeps its look:** text with bold or italic parts (and links) no longer turns plain while you select it.

@@ -291,7 +291,7 @@ public class HealthInsightTests
 
         Assert.Equal(Severity.Critical, Find("No antivirus").Severity);
         Assert.Equal(Severity.Critical, Find("no longer gets security updates").Severity);   // Windows 11 22H2 ended in 2024
-        Assert.Equal(Severity.Critical, Find("No Windows update was installed").Severity);
+        Assert.Equal(Severity.Warning, Find("No Windows update has arrived").Severity);   // 22H2 is out of support, so the gap is explained rather than blamed on the updater
         Assert.Equal(Severity.Warning, Find("Windows Firewall is off for Public").Severity);
         Assert.True(HasFix(Find("Windows Firewall is off"), FixIds.EnableFirewall));
         Assert.True(HasFix(Find("waiting for a restart"), FixIds.Restart));
@@ -348,6 +348,31 @@ public class HealthInsightTests
             if (fix.Kind == FixKind.Command && fix.Id is FixIds.EmptyRecycleBin or FixIds.HibernateOff or FixIds.CleanTemp or FixIds.EnableFirewall or FixIds.CreateRestorePoint)
                 Assert.False(string.IsNullOrWhiteSpace(fix.Confirm), "destructive or system-wide fixes must confirm first: " + fix.Id);
         }
+    }
+
+    [Fact]
+    public void StaleUpdates_OnAnOutOfSupportRelease_BlameTheRelease_NotTheUpdater()
+    {
+        // 22631 = Windows 11 23H2, serviced until 2025-11-11: no monthly updates exist for it any more.
+        var health = HealthyHealth();
+        health.DaysSinceUpdate = 351;
+        var insights = new InsightEngine().Evaluate(BaseSpec("22631"), health);
+        var stale = Assert.Single(insights, i => i.Title.StartsWith("No Windows update has arrived in 351 days", StringComparison.Ordinal));
+        Assert.Contains("out of support", stale.Title);
+        Assert.Contains("not broken", stale.Detail);
+        Assert.DoesNotContain("failing, paused or blocked", stale.Detail);
+        Assert.Contains(stale.AllFixes, f => f.Id.Contains("windowsupdate"));
+        Assert.DoesNotContain(insights, i => i.Title.StartsWith("No Windows update was installed", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void StaleUpdates_OnASupportedRelease_StillPointAtTheUpdater()
+    {
+        var health = HealthyHealth();
+        health.DaysSinceUpdate = 200;
+        var insights = new InsightEngine().Evaluate(BaseSpec("26200"), health);
+        var stale = Assert.Single(insights, i => i.Title.StartsWith("No Windows update was installed in 200 days", StringComparison.Ordinal));
+        Assert.Contains("failing, paused or blocked", stale.Detail);
     }
 
     [Fact]

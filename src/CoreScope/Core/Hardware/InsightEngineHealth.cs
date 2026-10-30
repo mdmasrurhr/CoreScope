@@ -24,7 +24,7 @@ public sealed partial class InsightEngine
         EvaluateWindowsSupport(spec, list);
         if (h is null) return;
         EvaluateSecurity(spec, h, list);
-        EvaluateUpdates(h, list);
+        EvaluateUpdates(spec, h, list);
         EvaluateRecovery(spec, h, list);
         EvaluateMaintenance(spec, h, list);
         EvaluateStartup(h, list);
@@ -45,6 +45,16 @@ public sealed partial class InsightEngine
         new(26100, "Windows 11 24H2", new(2026, 10, 13), new(2027, 10, 12)),
         new(26200, "Windows 11 25H2", new(2027, 10, 12), new(2028, 10, 10)),
     };
+
+    /// <summary>The release this PC runs and the date Microsoft stops servicing it (Home/Pro or Enterprise/Education by edition).</summary>
+    private static (Lifecycle Entry, DateTime End, bool Workplace)? SupportOf(SystemSpec spec)
+    {
+        if (!int.TryParse(spec.Os.Build, out var build)) return null;
+        var entry = Lifecycles.LastOrDefault(l => l.Build <= build && (build - l.Build) < 1000);
+        if (entry is null) return null;
+        var workplace = spec.Os.Name.Contains("Enterprise", StringComparison.OrdinalIgnoreCase) || spec.Os.Name.Contains("Education", StringComparison.OrdinalIgnoreCase);
+        return (entry, workplace ? entry.EndWorkplace : entry.EndHomePro, workplace);
+    }
 
     private static void EvaluateWindowsSupport(SystemSpec spec, List<Insight> list)
     {
@@ -153,7 +163,7 @@ public sealed partial class InsightEngine
 
     // ───────────────────────── Updates ─────────────────────────
 
-    private static void EvaluateUpdates(HealthSnapshot h, List<Insight> list)
+    private static void EvaluateUpdates(SystemSpec spec, HealthSnapshot h, List<Insight> list)
     {
         const string source = "Windows Update install history (registry, WMI Win32_QuickFixEngineering)";
         if (h.UpdateServiceDisabled == true)
@@ -163,7 +173,14 @@ public sealed partial class InsightEngine
                 @"Registry HKLM\SYSTEM\CurrentControlSet\Services\wuauserv"));
         if (h.DaysSinceUpdate is { } days)
         {
-            if (days >= UpdateWarnDays)
+            if (days >= UpdateWarnDays && SupportOf(spec) is { } support && support.End.Date < DateTime.Today)
+                // The usual cause is not a broken updater: this release no longer receives monthly updates, so there is nothing to install.
+                list.Add(Make(Severity.Warning, "Windows", $"No Windows update has arrived in {days} days: {support.Entry.Name} is out of support",
+                    $"Automatic updates are not broken. Microsoft stopped servicing {support.Entry.Name} on {support.End:MMMM d, yyyy}, so no monthly security updates are released for it any more " +
+                    "(Defender definitions still update, which is why Windows Update looks active). Moving to a newer version of Windows brings the updates back.",
+                    "Open Windows Update and install the newest Windows version offered.", $"Last Windows update {days} days ago; {support.Entry.Name} support ended {support.End:MMM d, yyyy}",
+                    $"Warning when no update arrived for ≥ {UpdateWarnDays} days and the release is out of support (otherwise: ≥ {UpdateCriticalDays} days critical)", source));
+            else if (days >= UpdateWarnDays)
                 list.Add(Make(days >= UpdateCriticalDays ? Severity.Critical : Severity.Warning, "Windows", $"No Windows update was installed in {days} days",
                     "Windows normally patches itself every month. A long gap means updates are failing, paused or blocked.",
                     "Open Windows Update and install what is waiting.", $"Last successful update {days} days ago",
@@ -386,6 +403,7 @@ public sealed partial class InsightEngine
         if (Has("no longer gets security updates") || Has("support ends in") || Has("no longer supported"))
             return new() { FixButtons.WindowsUpdate(), FixButtons.Web("Microsoft lifecycle page", "https://learn.microsoft.com/lifecycle/products/") };
         if (Has("update service is disabled")) return new() { FixButtons.Do(FixIds.StartWindowsUpdate, "Re-enable updates", admin: true), FixButtons.WindowsUpdate(false) };
+        if (Has("is out of support")) return new() { FixButtons.WindowsUpdate(), FixButtons.Web("Microsoft lifecycle page", "https://learn.microsoft.com/lifecycle/products/") };
         if (Has("No Windows update was installed")) return new() { FixButtons.WindowsUpdate(), FixButtons.Do(FixIds.StartWindowsUpdate, "Start the update service", admin: true, primary: false) };
         if (Has("waiting for a restart")) return new() { FixButtons.Restart(true), FixButtons.WindowsUpdate(false) };
         if (Has("System Restore is off"))

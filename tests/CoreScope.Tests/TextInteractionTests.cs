@@ -239,4 +239,51 @@ public class TextSelectionTests
             Assert.Same(view, TextInteraction.PageRootOf(inner));
         });
     }
+
+    [Fact]
+    public void NonHitTestVisibleElementOrParent_CannotBeSelected()
+    {
+        OnUiThread(window =>
+        {
+            TextInteraction.Register();
+            var blockDirect = new TextBlock { Text = "Direct Invisible", IsHitTestVisible = false };
+            var blockInParent = new TextBlock { Text = "Parent Invisible" };
+            var invisiblePanel = new StackPanel { IsHitTestVisible = false, Children = { blockInParent } };
+            window.Content = new StackPanel { Children = { blockDirect, invisiblePanel } };
+            Settle(window);
+
+            Assert.True(TextInteraction.IsClickTarget(blockDirect));
+            Assert.True(TextInteraction.IsClickTarget(blockInParent));
+            Assert.Null(TextInteraction.BeginSelection(blockDirect));
+            Assert.Null(TextInteraction.BeginSelection(blockInParent));
+        });
+    }
+
+    [Fact]
+    public void TextBlock_WithNoWrap_KeepsNoWrapInOverlay()
+    {
+        OnUiThread(window =>
+        {
+            var statusLabel = new TextBlock
+            {
+                Text = "Live · 13:23:45",
+                FontSize = 12,
+                TextWrapping = TextWrapping.NoWrap,
+                LineHeight = 16,
+                LineStackingStrategy = LineStackingStrategy.BlockLineHeight
+            };
+            Typography.SetNumeralAlignment(statusLabel, FontNumeralAlignment.Tabular);
+            var panel = new StackPanel { Orientation = Orientation.Horizontal, Children = { statusLabel } };
+            window.Content = panel;
+            Settle(window);
+
+            var box = (System.Windows.Controls.TextBox)TextInteraction.BeginSelection(statusLabel)!;
+            Settle(window);
+            Assert.NotNull(box);
+            Assert.Equal(TextWrapping.NoWrap, box.TextWrapping);
+            Assert.Equal(1, box.LineCount);
+            Assert.Equal("Live · 13:23:45", box.Text);
+            Assert.Equal(FontNumeralAlignment.Tabular, Typography.GetNumeralAlignment(box));
+        });
+    }
 }

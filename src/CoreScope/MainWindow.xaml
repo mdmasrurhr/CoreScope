@@ -77,11 +77,11 @@
                 </StackPanel>
             </StackPanel>
 
-            <StackPanel x:Name="StatusPanel" DockPanel.Dock="Bottom" Orientation="Horizontal" Margin="12,8,0,0">
+            <StackPanel x:Name="StatusPanel" DockPanel.Dock="Bottom" Orientation="Horizontal" Margin="12,8,0,0" IsHitTestVisible="False">
                 <Ellipse Width="8" Height="8" Fill="{StaticResource SevGood}" VerticalAlignment="Center"
                          Visibility="{Binding IsBusy, Converter={StaticResource Vis}, ConverterParameter=invert}" />
                 <TextBlock x:Name="StatusLabel" Text="{Binding StatusText}" Style="{StaticResource Caption}" Margin="8,0,0,0"
-                           Typography.NumeralAlignment="Tabular" />
+                           TextWrapping="NoWrap" Typography.NumeralAlignment="Tabular" />
             </StackPanel>
 
             <!-- Search (Ctrl+K) -->

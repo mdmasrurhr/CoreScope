@@ -169,7 +169,7 @@ public static class TextInteraction
     /// </summary>
     public static TextBoxBase? BeginSelection(TextBlock block, MouseButtonEventArgs? mouse = null)
     {
-        if (!block.IsVisible || block.ActualWidth < 1 || block.ActualHeight < 1) return null;
+        if (!block.IsVisible || !block.IsHitTestVisible || block.ActualWidth < 1 || block.ActualHeight < 1) return null;
         if (IsClickTarget(block) || IsInsideOverlay(block)) return null;
         var text = TextOf(block);
         if (string.IsNullOrWhiteSpace(text)) return null;
@@ -308,6 +308,7 @@ public static class TextInteraction
         box.RequestBringIntoView += (_, e) => e.Handled = true;   // an overlay sits on text that is already where it should be; never scroll the page for it
         TextBlock.SetLineHeight(box, block.LineHeight);
         TextBlock.SetLineStackingStrategy(box, block.LineStackingStrategy);
+        Typography.SetNumeralAlignment(box, Typography.GetNumeralAlignment(block));
         return box;
     }
 
@@ -549,7 +550,8 @@ public static class TextInteraction
     public static bool IsClickTarget(DependencyObject element)
     {
         for (var node = element; node is not null; node = Parent(node))
-            if (node is ButtonBase or ListBoxItem or ComboBoxItem or ComboBox or MenuItem or TabItem or TreeViewItem or Slider or Thumb or ScrollBar or TextBox)
+            if (node is UIElement { IsHitTestVisible: false }
+                || node is ButtonBase or ListBoxItem or ComboBoxItem or ComboBox or MenuItem or TabItem or TreeViewItem or Slider or Thumb or ScrollBar or TextBox)
                 return true;
         return false;
     }
